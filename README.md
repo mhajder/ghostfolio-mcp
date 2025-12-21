@@ -322,6 +322,18 @@ Ghostfolio supports multiple data sources for market data and symbols:
 
 When using tools that require a data source parameter, specify the appropriate source for your asset type.
 
+## Using Docker
+
+A Docker images are available on GitHub Packages for easy deployment.
+
+```sh
+# Normal STDIO image
+docker pull ghcr.io/mhajder/ghostfolio-mcp:latest
+
+# MCPO image for usage with Open WebUI
+docker pull ghcr.io/mhajder/ghostfolio-mcpo:latest
+```
+
 ## Contributing
 
 1. Fork the repository
