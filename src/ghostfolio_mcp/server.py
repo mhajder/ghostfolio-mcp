@@ -42,7 +42,6 @@ mcp = FastMCP(
     instructions=(
         "This MCP server exposes tools for interacting with the Ghostfolio API, supporting both read and write operations if not in read-only mode."
     ),
-    dependencies=["httpx", "python-dotenv", "pydantic"],
 )
 
 try:
