@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Get version from tag
         id: get_version
@@ -33,5 +33,5 @@ jobs:
           body: |
             ## Docker Images
             - `ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.tag_name }}`
-            - `ghcr.io/${{ github.repository }}:mcpo-${{ steps.get_version.outputs.tag_name }}`
+            - `ghcr.io/${{ github.repository }}o:${{ steps.get_version.outputs.tag_name }}`
           prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-') }}

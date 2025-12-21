@@ -10,6 +10,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME_MCPO: ${{ github.repository }}o
 
 jobs:
   build-and-push:
@@ -20,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -58,7 +59,7 @@ jobs:
             type=sha,format=short
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -72,9 +73,7 @@ jobs:
         id: meta-mcpo
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            prefix=mcpo-
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_MCPO }}
           tags: |
             # Set latest tag for main branch
             type=raw,value=latest,enable={{is_default_branch}}
@@ -92,7 +91,7 @@ jobs:
             type=sha,format=short
 
       - name: Build and push Docker MCPO image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.mcpo
