@@ -37,6 +37,30 @@ Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server desi
 - Access to a Ghostfolio instance
 - Valid Ghostfolio API token
 
+### Quick Install from PyPI
+
+The easiest way to get started is to install from PyPI:
+
+```sh
+# Using UV (recommended)
+uvx ghostfolio-mcp
+
+# Or using pip
+pip install ghostfolio-mcp
+```
+
+Remember to configure the environment variables for your Ghostfolio instance before running the server:
+
+```sh
+# Create environment configuration
+export GHOSTFOLIO_URL=https://domain.tld:3333
+export GHOSTFOLIO_TOKEN=your-ghostfolio-token
+```
+
+For more details, visit: https://pypi.org/project/ghostfolio-mcp/
+
+### Install from Source
+
 1. Clone the repository:
 
 ```sh
