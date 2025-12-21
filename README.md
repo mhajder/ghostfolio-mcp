@@ -130,6 +130,71 @@ RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MINUTES=1
 ```
 
+### Sentry Error Tracking & Monitoring (Optional)
+
+The server optionally supports **Sentry** for error tracking, performance monitoring, and debugging. Sentry integration is completely optional and only initialized if configured.
+
+#### Installation
+
+To enable Sentry monitoring, install the optional dependency:
+
+```sh
+# Using UV (recommended)
+uv sync --extra sentry
+```
+
+#### Configuration
+
+Enable Sentry by setting the `SENTRY_DSN` environment variable in your `.env` file:
+
+```env
+# Required: Sentry DSN for your project
+SENTRY_DSN=https://your-key@o12345.ingest.us.sentry.io/6789
+
+# Optional: Performance monitoring sample rate (0.0-1.0, default: 1.0)
+SENTRY_TRACES_SAMPLE_RATE=1.0
+
+# Optional: Include personally identifiable information (default: true)
+SENTRY_SEND_DEFAULT_PII=true
+
+# Optional: Environment name (e.g., "production", "staging")
+SENTRY_ENVIRONMENT=production
+
+# Optional: Release version (auto-detected from package if not set)
+SENTRY_RELEASE=1.2.2
+
+# Optional: Profiling - continuous profiling sample rate (0.0-1.0, default: 1.0)
+SENTRY_PROFILE_SESSION_SAMPLE_RATE=1.0
+
+# Optional: Profiling - lifecycle mode for profiling (default: "trace")
+# Options: "all", "continuation", "trace"
+SENTRY_PROFILE_LIFECYCLE=trace
+
+# Optional: Enable log capture as breadcrumbs and events (default: true)
+SENTRY_ENABLE_LOGS=true
+```
+
+#### Features
+
+When enabled, Sentry automatically captures:
+
+- **Exceptions & Errors**: All unhandled exceptions with full context
+- **Performance Metrics**: Request/response times and traces
+- **MCP Integration**: Detailed MCP server activity and interactions
+- **Logs & Breadcrumbs**: Application logs and event trails for debugging
+- **Context Data**: Environment, client info, and request parameters
+
+#### Getting a Sentry DSN
+
+1. Create a free account at [sentry.io](https://sentry.io)
+2. Create a new Python project
+3. Copy your DSN from the project settings
+4. Set it in your `.env` file
+
+#### Disabling Sentry
+
+Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will run normally without any Sentry integration, and no monitoring data will be collected.
+
 ## Available Tools
 
 ### Account Management Tools

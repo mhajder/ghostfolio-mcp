@@ -31,6 +31,11 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[project.optional-dependencies]
+sentry = [
+    "sentry-sdk>=2.43.0",
+]
+
 [dependency-groups]
 dev = [
     "commitizen",

@@ -18,9 +18,13 @@ from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_config_from_env
 from ghostfolio_mcp.ghostfolio_tools import register_tools
 from ghostfolio_mcp.middlewares import DisabledTagsMiddleware
 from ghostfolio_mcp.middlewares import ReadOnlyTagMiddleware
+from ghostfolio_mcp.sentry_init import init_sentry
 
 # Load environment variables
 load_dotenv()
+
+# Initialize optional Sentry monitoring
+init_sentry()
 
 # Configure logging
 logging.basicConfig(
