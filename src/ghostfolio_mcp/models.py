@@ -20,3 +20,22 @@ class GhostfolioConfig(BaseModel):
     rate_limit_window_minutes: int = Field(
         1, description="Rate limit window in minutes"
     )
+
+
+class TransportConfig(BaseModel):
+    """Configuration for MCP transport layer"""
+
+    transport_type: str = Field(
+        "stdio",
+        description="Transport type: 'stdio', 'sse' (Server-Sent Events), or 'http' (HTTP Streamable)",
+    )
+    # HTTP transport settings (for both SSE and HTTP Streamable)
+    http_host: str = Field(
+        "0.0.0.0", description="Host to bind for HTTP transports (SSE/HTTP Streamable)"
+    )
+    http_port: int = Field(
+        8000, description="Port to bind for HTTP transports (SSE/HTTP Streamable)"
+    )
+    http_bearer_token: str | None = Field(
+        None, description="Bearer token for HTTP authentication"
+    )

@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from ghostfolio_mcp.models import GhostfolioConfig
+from ghostfolio_mcp.models import TransportConfig
 from ghostfolio_mcp.utils import parse_bool
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,16 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         rate_limit_enabled=parse_bool(os.getenv("RATE_LIMIT_ENABLED"), default=False),
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
+    )
+
+
+def get_transport_config_from_env() -> TransportConfig:
+    """Get transport configuration from environment variables."""
+    return TransportConfig(
+        transport_type=os.getenv("MCP_TRANSPORT", "stdio").lower(),
+        http_host=os.getenv("MCP_HTTP_HOST", "0.0.0.0"),
+        http_port=int(os.getenv("MCP_HTTP_PORT", "8000")),
+        http_bearer_token=os.getenv("MCP_HTTP_BEARER_TOKEN"),
     )
 
 

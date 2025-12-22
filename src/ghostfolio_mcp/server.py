@@ -12,9 +12,11 @@ from importlib.metadata import version
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 
 from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_config_from_env
+from ghostfolio_mcp.ghostfolio_client import get_transport_config_from_env
 from ghostfolio_mcp.ghostfolio_tools import register_tools
 from ghostfolio_mcp.middlewares import DisabledTagsMiddleware
 from ghostfolio_mcp.middlewares import ReadOnlyTagMiddleware
@@ -39,6 +41,25 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.1"
 
+try:
+    GHOSTFOLIO_CONFIG = get_ghostfolio_config_from_env()
+    TRANSPORT_CONFIG = get_transport_config_from_env()
+except Exception as e:
+    logger.error(f"Invalid configuration: {e}")
+    raise
+
+# Create auth provider if bearer token is configured
+auth_provider = None
+if getattr(TRANSPORT_CONFIG, "http_bearer_token", None):
+    auth_provider = StaticTokenVerifier(
+        tokens={
+            TRANSPORT_CONFIG.http_bearer_token: {
+                "client_id": "authenticated-client",
+                "scopes": ["read", "write"],
+            }
+        }
+    )
+
 # Initialize FastMCP server
 mcp = FastMCP(
     name="Ghostfolio MCP Server",
@@ -46,13 +67,8 @@ mcp = FastMCP(
     instructions=(
         "This MCP server exposes tools for interacting with the Ghostfolio API, supporting both read and write operations if not in read-only mode."
     ),
+    auth=auth_provider,
 )
-
-try:
-    GHOSTFOLIO_CONFIG = get_ghostfolio_config_from_env()
-except Exception as e:
-    logger.error(f"Invalid Ghostfolio configuration: {e}")
-    raise
 
 # Register all tools
 register_tools(mcp, GHOSTFOLIO_CONFIG)
@@ -84,14 +100,45 @@ def main():
     # Basic validation
     if not all([GHOSTFOLIO_CONFIG.ghostfolio_url, GHOSTFOLIO_CONFIG.token]):
         logger.error(
-            "Missing required Ghostfolio configuration (GHOSTFOLIO_URL or GHOSTFOLIO_TOKEN)."
+            "Missing required Ghostfolio configuration (GHOSTFOLIO_URL or GHOSTFOLIO_TOKEN). Check your .env file."
         )
         raise SystemExit(1)
 
     logger.info(
-        f"Starting Ghostfolio MCP Server for {GHOSTFOLIO_CONFIG.ghostfolio_url} ..."
+        f"Starting Ghostfolio MCP Server at {GHOSTFOLIO_CONFIG.ghostfolio_url} ..."
     )
-    mcp.run()
+
+    # Choose transport based on configuration
+    if TRANSPORT_CONFIG.transport_type == "sse":
+        logger.info(
+            f"Using HTTP SSE transport on {TRANSPORT_CONFIG.http_host}:{TRANSPORT_CONFIG.http_port}"
+        )
+        if TRANSPORT_CONFIG.http_bearer_token:
+            logger.info("Bearer token authentication enabled for SSE transport")
+
+        # Run with HTTP SSE transport
+        mcp.run(
+            transport="sse",
+            host=TRANSPORT_CONFIG.http_host,
+            port=TRANSPORT_CONFIG.http_port,
+        )
+    elif TRANSPORT_CONFIG.transport_type == "http":
+        logger.info(
+            f"Using HTTP Streamable transport on {TRANSPORT_CONFIG.http_host}:{TRANSPORT_CONFIG.http_port}"
+        )
+        if TRANSPORT_CONFIG.http_bearer_token:
+            logger.info("Bearer token authentication enabled for Streamable transport")
+
+        # Run with HTTP Streamable transport
+        mcp.run(
+            transport="http",
+            host=TRANSPORT_CONFIG.http_host,
+            port=TRANSPORT_CONFIG.http_port,
+        )
+    else:
+        # Default to STDIO transport
+        logger.info("Using STDIO transport")
+        mcp.run()
 
 
 if __name__ == "__main__":
