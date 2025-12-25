@@ -41,11 +41,11 @@ USER appuser
 ENV PATH="/app/.venv/bin:$PATH"
 
 HEALTHCHECK \
-  --interval=30s \
-  --timeout=10s \
-  --start-period=30s \
+  --interval=15s \
+  --timeout=5s \
+  --start-period=5s \
   --retries=3 \
-  CMD wget -q -O - --post-data='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"health-check","version":"1.0.0"}}}' --header='Content-Type: application/json' --header='Accept: application/json, text/event-stream' http://127.0.0.1:8000/mcp > /dev/null 2>&1 || exit 1
+  CMD sh -c 'P="{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"health-check\",\"version\":\"1.0.0\"}}}"; eval "wget -q -O - --post-data='"'"'$P'"'"' --header='"'"'Content-Type: application/json'"'"' --header='"'"'Accept: application/json, text/event-stream'"'"' $([ -n \"$MCP_HTTP_BEARER_TOKEN\" ] && echo \"--header='"'"'Authorization: Bearer $MCP_HTTP_BEARER_TOKEN'"'"'\") http://127.0.0.1:8000/mcp" 2>&1 | grep -q "\"result\"" && exit 0 || exit 1'
 
 ENV MCP_TRANSPORT=http
 ENV MCP_HTTP_HOST=0.0.0.0
@@ -53,4 +53,4 @@ ENV MCP_HTTP_PORT=8000
 
 EXPOSE 8000
 
-CMD ["python", "-u", "run_server.py"]
+ENTRYPOINT ["ghostfolio-mcp"]
