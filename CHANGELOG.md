@@ -1,3 +1,19 @@
+## v1.2.0 (2026-04-09)
+
+### Feat
+
+- add MCP Registry integration and metadata
+- add optional tool search transform support
+
+### Fix
+
+- update healthcheck command to use nc for service availability
+- **docker**: improve healthcheck configuration
+
+### Refactor
+
+- replace tag middleware with component visibility
+
 ## v1.1.0 (2025-12-22)
 
 ### Feat

@@ -8,12 +8,12 @@
     "url": "https://github.com/mhajder/ghostfolio-mcp",
     "source": "github"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "ghostfolio-mcp",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -112,7 +112,7 @@
     {
       "registryType": "pypi",
       "identifier": "ghostfolio-mcp",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "streamable-http",
@@ -225,7 +225,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/mhajder/ghostfolio-mcp:1.1.0",
+      "identifier": "ghcr.io/mhajder/ghostfolio-mcp:1.2.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{MCP_HTTP_PORT}/mcp"
