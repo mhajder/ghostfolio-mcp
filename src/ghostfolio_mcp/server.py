@@ -18,8 +18,6 @@ from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMid
 from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_config_from_env
 from ghostfolio_mcp.ghostfolio_client import get_transport_config_from_env
 from ghostfolio_mcp.ghostfolio_tools import register_tools
-from ghostfolio_mcp.middlewares import DisabledTagsMiddleware
-from ghostfolio_mcp.middlewares import ReadOnlyTagMiddleware
 from ghostfolio_mcp.sentry_init import init_sentry
 
 # Load environment variables
@@ -73,17 +71,26 @@ mcp = FastMCP(
 # Register all tools
 register_tools(mcp, GHOSTFOLIO_CONFIG)
 
-# Apply disabled tags middleware if any tags are disabled
-if getattr(GHOSTFOLIO_CONFIG, "disabled_tags", set()):
-    logger.info(
-        f"Disabled tags configured: {GHOSTFOLIO_CONFIG.disabled_tags} - applying middleware"
-    )
-    mcp.add_middleware(DisabledTagsMiddleware(GHOSTFOLIO_CONFIG.disabled_tags))
 
-# Enforce read-only behavior via middleware
-if getattr(GHOSTFOLIO_CONFIG, "read_only_mode", False):
-    logger.info("Read-only mode is enabled - applying middleware")
-    mcp.add_middleware(ReadOnlyTagMiddleware())
+def configure_component_visibility() -> None:
+    """Apply server-level visibility transforms for read-only and disabled tags."""
+
+    disabled_tags = getattr(GHOSTFOLIO_CONFIG, "disabled_tags", set())
+    read_only_mode = getattr(GHOSTFOLIO_CONFIG, "read_only_mode", False)
+
+    if read_only_mode:
+        logger.info("Read-only mode is enabled - restricting to read-only components")
+        mcp.enable(tags={"read-only"}, only=True)
+
+    if disabled_tags:
+        logger.info(
+            "Disabled tags configured: %s - disabling matching components",
+            disabled_tags,
+        )
+        mcp.disable(tags=disabled_tags)
+
+
+configure_component_visibility()
 
 # Optional rate limiting
 if getattr(GHOSTFOLIO_CONFIG, "rate_limit_enabled", False):
