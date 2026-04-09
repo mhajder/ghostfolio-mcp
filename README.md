@@ -28,6 +28,7 @@ Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server desi
 - Comprehensive logging and audit trails
 - SSL/TLS support and configurable timeouts
 - Extensible with custom middlewares and tag-based tool filtering
+- Optional tool-search transform for large tool catalogs
 
 ## Installation
 
@@ -152,6 +153,14 @@ LOG_LEVEL=INFO
 RATE_LIMIT_ENABLED=false
 RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MINUTES=1
+
+# Tool Search Transform (Optional)
+# Set TOOL_SEARCH_ENABLED true to replace full tool listings with search_tools + call_tool
+TOOL_SEARCH_ENABLED=false
+# Search strategy: bm25 (natural language) or regex (pattern match)
+TOOL_SEARCH_STRATEGY=bm25
+# Maximum number of tools returned by search_tools
+TOOL_SEARCH_MAX_RESULTS=5
 
 # Sentry Error Tracking (Optional)
 # Set SENTRY_DSN to enable error tracking and performance monitoring
@@ -325,6 +334,28 @@ RATE_LIMIT_WINDOW_MINUTES=1   # Window size in minutes
 ```
 
 If `RATE_LIMIT_ENABLED` is set to `true`, the server will apply rate limiting middleware. Adjust `RATE_LIMIT_MAX_REQUESTS` and `RATE_LIMIT_WINDOW_MINUTES` as needed for your environment.
+
+### Tool Search for Large Toolsets
+
+FastMCP tool search can reduce prompt size for servers with many tools.
+When enabled, `list_tools` returns two synthetic tools:
+
+- `search_tools`: Finds matching tools and returns their full schemas
+- `call_tool`: Executes any discovered tool by name
+
+Enable it with:
+
+```env
+TOOL_SEARCH_ENABLED=true
+TOOL_SEARCH_STRATEGY=bm25      # bm25 or regex
+TOOL_SEARCH_MAX_RESULTS=8      # optional, default is 5
+```
+
+`bm25` supports natural language queries, while `regex` uses a regex
+`pattern` input for deterministic matching.
+
+Tool search respects existing visibility controls (read-only mode and
+disabled tags).
 
 ### SSL/TLS Configuration
 

@@ -172,6 +172,9 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         rate_limit_enabled=parse_bool(os.getenv("RATE_LIMIT_ENABLED"), default=False),
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
+        tool_search_enabled=parse_bool(os.getenv("TOOL_SEARCH_ENABLED"), default=False),
+        tool_search_strategy=os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower(),
+        tool_search_max_results=int(os.getenv("TOOL_SEARCH_MAX_RESULTS", "5")),
     )
 
 
