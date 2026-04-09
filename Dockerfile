@@ -25,7 +25,8 @@ LABEL org.opencontainers.image.title="Ghostfolio MCP Server" \
       org.opencontainers.image.url="https://github.com/mhajder/ghostfolio-mcp" \
       org.opencontainers.image.source="https://github.com/mhajder/ghostfolio-mcp" \
       org.opencontainers.image.vendor="Mateusz Hajder" \
-      org.opencontainers.image.licenses="AGPL-3.0"
+      org.opencontainers.image.licenses="AGPL-3.0" \
+      io.modelcontextprotocol.server.name="io.github.mhajder/ghostfolio-mcp"
 ENV PYTHONUNBUFFERED=1
 
 RUN apk add --no-cache ca-certificates \

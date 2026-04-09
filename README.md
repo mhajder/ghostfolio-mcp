@@ -1,5 +1,7 @@
 # Ghostfolio MCP Server
 
+<!-- mcp-name: io.github.mhajder/ghostfolio-mcp -->
+
 Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server designed to provide advanced, programmable access to Ghostfolio portfolio management and financial data. It exposes a modern API for querying, analyzing, and managing your investment portfolio through Ghostfolio's comprehensive features. The server supports both read and write operations, robust security features, and is suitable for integration with automation tools, financial dashboards, and custom portfolio management applications.
 
 ## Features

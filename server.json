@@ -1,0 +1,341 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mhajder/ghostfolio-mcp",
+  "description": "MCP server for Ghostfolio portfolio management and financial data access",
+  "title": "Ghostfolio MCP",
+  "websiteUrl": "https://github.com/mhajder/ghostfolio-mcp",
+  "repository": {
+    "url": "https://github.com/mhajder/ghostfolio-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "ghostfolio-mcp",
+      "version": "0.3.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GHOSTFOLIO_URL",
+          "description": "Ghostfolio base URL (e.g., https://domain.tld:3333)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TOKEN",
+          "description": "Ghostfolio API token for authentication",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "GHOSTFOLIO_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    },
+    {
+      "registryType": "pypi",
+      "identifier": "ghostfolio-mcp",
+      "version": "0.3.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:{MCP_HTTP_PORT}/mcp"
+      },
+      "environmentVariables": [
+        {
+          "name": "GHOSTFOLIO_URL",
+          "description": "Ghostfolio base URL (e.g., https://domain.tld:3333)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TOKEN",
+          "description": "Ghostfolio API token for authentication",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "GHOSTFOLIO_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_HTTP_PORT",
+          "description": "Port for HTTP server (default: 8000)",
+          "default": "8000",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_TRANSPORT",
+          "description": "MCP transport type (http for HTTP, stdio for stdio)",
+          "value": "http",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/mhajder/ghostfolio-mcp:0.3.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:{MCP_HTTP_PORT}/mcp"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-p",
+          "value": "{MCP_HTTP_PORT}:8000",
+          "description": "Port mapping for HTTP transport",
+          "isRequired": true
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "GHOSTFOLIO_URL",
+          "description": "Ghostfolio base URL (e.g., https://domain.tld:3333)",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TOKEN",
+          "description": "Ghostfolio API token for authentication",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "GHOSTFOLIO_VERIFY_SSL",
+          "description": "Verify SSL certificates (true/false)",
+          "default": "true",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_TIMEOUT",
+          "description": "Request timeout in seconds",
+          "default": "30",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Enable read-only mode to restrict write operations",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "GHOSTFOLIO_DISABLED_TAGS",
+          "description": "Comma-separated list of tags to disable tools for",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+          "default": "INFO",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_ENABLED",
+          "description": "Enable rate limiting",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_MAX_REQUESTS",
+          "description": "Maximum requests per rate limit window",
+          "default": "60",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "RATE_LIMIT_WINDOW_MINUTES",
+          "description": "Rate limit window in minutes",
+          "default": "1",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_ENABLED",
+          "description": "Enable FastMCP tool search transform",
+          "default": "false",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_STRATEGY",
+          "description": "Tool search strategy (bm25 or regex)",
+          "default": "bm25",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "TOOL_SEARCH_MAX_RESULTS",
+          "description": "Maximum tool search results returned by search_tools",
+          "default": "5",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MCP_HTTP_PORT",
+          "description": "Port for HTTP server (default: 8000)",
+          "default": "8000",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
