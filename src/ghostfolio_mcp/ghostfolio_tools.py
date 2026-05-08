@@ -204,7 +204,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         data: Annotated[
             dict[str, Any],
             Field(
-                description="Transaction data in the format expected by Ghostfolio API. Should contain an 'activities' list with transaction objects including symbol, date, type, quantity, unitPrice, currency, etc."
+                description="Transaction data in the format expected by Ghostfolio API. Should contain an 'activities' list. Each activity must have: 'currency', 'dataSource', 'date' (ISO-8601, e.g. 2021-09-15T00:00:00.000Z), 'quantity', 'symbol', 'type' (BUY, SELL, etc), 'unitPrice', and usually 'fee' (can be 0)."
             ),
         ],
     ) -> dict[str, Any]:
@@ -216,7 +216,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         transactions from other platforms.
 
         Args:
-            data: Transaction data in the format expected by Ghostfolio API. Should contain an 'activities' list with transaction objects.
+            data: Transaction data. Must contain an 'activities' list with transaction objects including currency, dataSource, date (ISO-8601), fee, quantity, symbol, type, unitPrice.
 
         Returns:
             Dictionary containing import result
@@ -512,7 +512,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             Dictionary containing position details including symbol, quantity, value, and performance
         """
         async with get_ghostfolio_client(config) as client:
-            return await client.get(f"portfolio/position/{data_source}/{symbol}")
+            return await client.get(f"portfolio/holding/{data_source}/{symbol}")
 
     # =============================================================================
     # SYMBOL ENDPOINTS

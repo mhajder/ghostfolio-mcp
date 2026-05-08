@@ -107,8 +107,20 @@ class GhostfolioClient:
         url_path = f"/{api_version}/{path.lstrip('/')}"
         if object_id:
             url_path = f"{url_path.rstrip('/')}/{object_id}"
+
+        # Path-specific trailing slash logic because Ghostfolio's NestJS is inconsistent
         if method.upper() == "GET":
-            if not url_path.endswith("/"):
+            # These paths specifically do NOT want a trailing slash
+            no_slash_paths = ["/market-data/", "/portfolio/holding/", "/symbol/"]
+            needs_slash = True
+            for nsp in no_slash_paths:
+                if f"/{api_version}{nsp}" in url_path or url_path.startswith(
+                    f"/{api_version}{nsp}"
+                ):
+                    needs_slash = False
+                    break
+
+            if needs_slash and not url_path.endswith("/"):
                 url_path += "/"
         else:
             url_path = url_path.rstrip("/")
