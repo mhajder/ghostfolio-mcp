@@ -193,7 +193,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
     # =============================================================================
 
     @mcp.tool(
-        tags=("import"),
+        tags={"import"},
         annotations={
             "readOnlyHint": False,
             "destructiveHint": False,
