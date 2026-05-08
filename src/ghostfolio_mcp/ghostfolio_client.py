@@ -98,18 +98,32 @@ class GhostfolioClient:
 
         await self._refresh_jwt_token()
 
-        # Build URL path
+        # Build URL path. Ghostfolio's NestJS routes are inconsistent on the
+        # trailing slash: most GET endpoints (asset, portfolio, account, etc.)
+        # require the trailing slash, while several POST/PATCH/DELETE
+        # endpoints — notably /market-data/MANUAL/<symbol>, /admin/profile-data
+        # /MANUAL/<symbol>, and /order/<id> — return 404 *with* the trailing
+        # slash. Match the slash to the method.
         url_path = f"/{api_version}/{path.lstrip('/')}"
         if object_id:
             url_path = f"{url_path.rstrip('/')}/{object_id}"
-        if not url_path.endswith("/"):
-            url_path += "/"
+        if method.upper() == "GET":
+            if not url_path.endswith("/"):
+                url_path += "/"
+        else:
+            url_path = url_path.rstrip("/")
 
         headers = {"Authorization": f"Bearer {self._jwt_token}"}
         resp = await self.client.request(
             method, url_path, params=params, json=data, headers=headers
         )
         resp.raise_for_status()
+        # Some Ghostfolio admin endpoints (e.g. PATCH
+        # /admin/profile-data/MANUAL/<symbol>) return 200 with an empty body.
+        # resp.json() raises JSONDecodeError on empty content; treat empty as
+        # an empty dict.
+        if not resp.content:
+            return {}
         return resp.json()
 
     async def get(
