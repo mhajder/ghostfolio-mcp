@@ -189,8 +189,8 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         }
 
     return GhostfolioConfig(
-        ghostfolio_url=os.getenv("GHOSTFOLIO_URL"),
-        token=os.getenv("GHOSTFOLIO_TOKEN"),
+        ghostfolio_url=os.getenv("GHOSTFOLIO_URL", ""),
+        token=os.getenv("GHOSTFOLIO_TOKEN", ""),
         verify_ssl=parse_bool(os.getenv("GHOSTFOLIO_VERIFY_SSL"), default=True),
         timeout=int(os.getenv("GHOSTFOLIO_TIMEOUT", "30")),
         read_only_mode=parse_bool(os.getenv("READ_ONLY_MODE"), default=False),
@@ -199,7 +199,11 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
         tool_search_enabled=parse_bool(os.getenv("TOOL_SEARCH_ENABLED"), default=False),
-        tool_search_strategy=os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower(),
+        tool_search_strategy=(
+            "regex"
+            if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
+            else "bm25"
+        ),
         tool_search_max_results=int(os.getenv("TOOL_SEARCH_MAX_RESULTS", "5")),
     )
 
