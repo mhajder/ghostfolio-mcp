@@ -19,9 +19,11 @@ Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server desi
 ### Management Operations
 
 - Create and manage investment accounts with different currencies and platforms
+- Create, delete, and manage individual transactions and activities
 - Import transactions and historical data from other platforms
 - Configure read-only mode to restrict all write operations for safe monitoring
 - Support for bulk transaction imports and portfolio data management
+- Monitor system health and platform availability
 
 ### Advanced Capabilities
 
@@ -264,8 +266,9 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 - `get_accounts`: Get all accounts in your portfolio including account types and balances
 - `get_account_balances`: Get account balances for a specific account
 - `create_account`: Create a new account in your portfolio
+- `delete_account`: Delete an existing account from your portfolio (destructive operation)
 
-### Portfolio Analysis Tools
+### Portfolio & Transaction Management Tools
 
 - `get_portfolio_performance`: Get portfolio performance data including returns, benchmarks, and performance metrics
 - `get_portfolio_holdings`: Get portfolio holdings and positions including allocations and asset breakdowns
@@ -273,24 +276,26 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 - `get_position`: Get position details for a specific symbol from a data source
 - `get_investments`: Get investment data grouped by time period showing cash flows and contributions
 - `get_dividends`: Get dividend data grouped by time period showing dividend payments and yield
-- `get_orders`: Get all orders from your portfolio, optionally filtered by account
+- `get_orders`: Get all activities/orders from your portfolio, optionally filtered by account
+- `create_activity`: Create a single new transaction/activity in your portfolio (BUY, SELL, DIVIDEND, INTEREST, FEE, etc.)
+- `delete_activity`: Delete a single activity/transaction by its ID (destructive operation)
 
 ### Market Data & Symbol Tools
 
-- `get_market_data_admin`: Get overview of market data loaded in your Ghostfolio instance
-- `get_market_data`: Get market data for a specific symbol from a data source
 - `get_market_data_for_asset`: Get market data for a specific asset
 - `get_symbol_data`: Get symbol data for a specific asset from a data source
 - `get_historical_data`: Get historical data for a specific symbol on a specific date
 - `lookup_symbols`: Search for symbols using a query string
-
-### Asset Information Tools
-
 - `get_asset_profile`: Get asset profile information for a specific symbol
 
 ### Data Import Tools
 
-- `import_transactions`: Import transactions into your portfolio (write operation)
+- `import_transactions`: Import transactions into your portfolio (bulk import operation)
+
+### System & Platform Tools
+
+- `get_health`: Get system health status of the Ghostfolio backend service
+- `get_platforms`: Get list of available platforms (brokers, exchanges, etc.) for account tracking
 
 ### User Management Tools
 
@@ -317,14 +322,14 @@ GHOSTFOLIO_DISABLED_TAGS=portfolio,symbol,import
 ```
 
 Available tags include:
+- `account` - Account management tools (create, delete, get accounts)
 - `portfolio` - Portfolio analysis and performance tools
 - `symbol` - Symbol lookup and data tools
-- `account` - Account management tools
 - `import` - Data import tools
-- `admin` - Administrative tools
-- `market-data` - Market data tools
 - `asset` - Asset profile tools
 - `user` - User information tools
+- `system` - System health and platform information tools
+- `activities` - Activity/transaction management tools (create, delete activities)
 
 ### Rate Limiting
 

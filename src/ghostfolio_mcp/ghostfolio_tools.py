@@ -148,6 +148,35 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             }
             return await client.post("account", data=account_data)
 
+    @mcp.tool(
+        tags={"account", "delete"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+        },
+    )
+    async def delete_account(
+        account_id: Annotated[
+            str,
+            Field(description="Account ID to delete (e.g., 'cb547e5c-..')"),
+        ],
+    ) -> dict[str, Any]:
+        """
+        Delete an existing account from your portfolio.
+
+        Deletes an account specified by its ID. Be careful, this might delete
+        associated transactions depending on backend rules!
+
+        Args:
+            account_id: Account ID to delete
+
+        Returns:
+            Dictionary containing the deletion status
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.delete(f"account/{account_id}")
+
     # =============================================================================
     # ASSET ENDPOINTS
     # =============================================================================
@@ -265,7 +294,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             return await client.get(f"market-data/{data_source}/{symbol}")
 
     # =============================================================================
-    # ORDER ENDPOINTS
+    # ORDER / ACTIVITY ENDPOINTS
     # =============================================================================
 
     @mcp.tool(
@@ -286,7 +315,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         ] = None,
     ) -> dict[str, Any]:
         """
-        Get all orders from your portfolio, optionally filtered by account.
+        Get all activities/orders from your portfolio, optionally filtered by account.
 
         Retrieves a list of all buy/sell orders in your portfolio, optionally
         filtered by a specific account.
@@ -300,6 +329,84 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         async with get_ghostfolio_client(config) as client:
             params = {"accounts": account_id} if account_id else None
             return await client.get("order", params=params)
+
+    @mcp.tool(
+        tags={"portfolio", "activities", "create"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": False,
+        },
+    )
+    async def create_activity(
+        type: Annotated[
+            str,
+            Field(
+                description="Type of activity: BUY, SELL, DIVIDEND, INTEREST, FEE, ITEM, LIABILITY"
+            ),
+        ],
+        symbol: Annotated[
+            str, Field(description="Symbol profile ID or actual ticker symbol")
+        ],
+        date: Annotated[
+            str,
+            Field(
+                description="Date in ISO 8601 format (e.g. 2026-05-09T00:00:00.000Z)"
+            ),
+        ],
+        quantity: Annotated[float, Field(description="Number of shares/units")],
+        unit_price: Annotated[float, Field(description="Price per unit")],
+        currency: Annotated[
+            str, Field(description="Currency code for the transaction")
+        ],
+        data_source: Annotated[
+            str, Field(description="Data source (e.g., 'YAHOO', 'COINGECKO', 'MANUAL')")
+        ],
+        account_id: Annotated[
+            str,
+            Field(description="The account ID where this activity will be recorded"),
+        ],
+        fee: Annotated[
+            float, Field(default=0.0, description="Optional fee amount")
+        ] = 0.0,
+        comment: Annotated[str, Field(default="", description="Optional comment")] = "",
+    ) -> dict[str, Any]:
+        """
+        Create a single new transaction/activity.
+        """
+        async with get_ghostfolio_client(config) as client:
+            activity_data = {
+                "type": type,
+                "symbol": symbol,
+                "date": date,
+                "quantity": quantity,
+                "unitPrice": unit_price,
+                "currency": currency,
+                "dataSource": data_source,
+                "accountId": account_id,
+                "fee": fee,
+                "comment": comment,
+            }
+            return await client.post("activities", data=activity_data)
+
+    @mcp.tool(
+        tags={"portfolio", "activities", "delete"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+        },
+    )
+    async def delete_activity(
+        activity_id: Annotated[
+            str, Field(description="The unique ID of the activity to delete")
+        ],
+    ) -> dict[str, Any]:
+        """
+        Delete a single activity/transaction by its ID.
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.delete(f"activities/{activity_id}")
 
     # =============================================================================
     # PORTFOLIO ENDPOINTS
@@ -660,3 +767,49 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         """
         async with get_ghostfolio_client(config) as client:
             return await client.get("user")
+
+    # =============================================================================
+    # SYSTEM ENDPOINTS
+    # =============================================================================
+
+    @mcp.tool(
+        tags={"system", "health", "read-only"},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+        },
+    )
+    async def get_health() -> dict[str, Any]:
+        """
+        Get system health status.
+
+        Retrieves the health status of the Ghostfolio backend service.
+        This is useful to verify if the server is up and running correctly.
+
+        Returns:
+            Dictionary containing health status information
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.get("health")
+
+    @mcp.tool(
+        tags={"system", "platforms", "read-only"},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+        },
+    )
+    async def get_platforms() -> dict[str, Any]:
+        """
+        Get available platforms.
+
+        Retrieves a list of all available platforms (brokers, exchanges, etc.)
+        that can be used when tracking accounts or transactions.
+
+        Returns:
+            Dictionary containing available platforms
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.get("platforms")
