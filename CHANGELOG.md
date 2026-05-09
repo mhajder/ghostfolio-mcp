@@ -1,3 +1,11 @@
+## v1.2.1 (2026-05-09)
+
+### Fix
+
+- handle trailing slash inconsistencies in Ghostfolio API
+- **client**: trailing slash by HTTP method; tolerate empty response bodies (#29)
+- declare import_transactions tags as a set, not a string (#27)
+
 ## v1.2.0 (2026-04-09)
 
 ### Feat
