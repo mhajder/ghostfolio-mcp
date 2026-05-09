@@ -1,3 +1,9 @@
+## v1.3.0 (2026-05-09)
+
+### Feat
+
+- **tools**: add account, activity, and system management endpoints
+
 ## v1.2.1 (2026-05-09)
 
 ### Fix
