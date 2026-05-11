@@ -289,6 +289,7 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 - `lookup_symbols`: Search for symbols using a query string
 - `get_asset_profile`: Get asset profile information for a specific symbol
 - `upsert_asset_profile`: Create-or-update an asset profile (idempotent; tolerates Ghostfolio's HTTP 500 on the create step and relies on the subsequent PATCH as the source of truth)
+- `delete_asset_profile`: Delete an asset profile (destructive operation; may delete associated activities and market data depending on backend rules)
 
 ### Data Import Tools
 
