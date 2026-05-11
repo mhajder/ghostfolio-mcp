@@ -293,6 +293,55 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         async with get_ghostfolio_client(config) as client:
             return await client.get(f"market-data/{data_source}/{symbol}")
 
+    @mcp.tool(
+        tags={"market-data", "create"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+        },
+    )
+    async def add_market_data_points(
+        data_source: Annotated[
+            str,
+            Field(
+                description="Data source for the symbol. Typically 'MANUAL' — Ghostfolio rejects market-data writes for auto-fetched sources like 'YAHOO' or 'COINGECKO'"
+            ),
+        ],
+        symbol: Annotated[
+            str,
+            Field(
+                description="Symbol/ticker of the asset (e.g., 'TRUE-UNLISTED', 'PILLAR3A-FINPENSION-X')"
+            ),
+        ],
+        market_data: Annotated[
+            list[dict[str, Any]],
+            Field(
+                description="List of market data points. Each entry must include 'date' (ISO 8601, e.g. '2026-04-30T00:00:00.000Z') and 'marketPrice' (numeric value of the asset at that date)"
+            ),
+        ],
+    ) -> dict[str, Any]:
+        """
+        Add one or more market data points for a specific asset.
+
+        Posts to the market-data endpoint for the given data source and
+        symbol. Same (symbol, date) overwrites the existing point; passing
+        the same input twice yields the same end state.
+
+        Args:
+            data_source: Data source (typically 'MANUAL')
+            symbol: Symbol/ticker of the asset
+            market_data: List of {date, marketPrice} entries
+
+        Returns:
+            Dictionary containing the upstream response
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.post(
+                f"market-data/{data_source}/{symbol}",
+                data={"marketData": market_data},
+            )
+
     # =============================================================================
     # ORDER / ACTIVITY ENDPOINTS
     # =============================================================================
