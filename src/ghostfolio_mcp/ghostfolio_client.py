@@ -168,6 +168,18 @@ class GhostfolioClient:
             "PUT", path, data=data, api_version=api_version, object_id=object_id
         )
 
+    async def patch(
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+        api_version: str = "v1",
+        object_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Perform a PATCH request to a Ghostfolio API path."""
+        return await self.request(
+            "PATCH", path, data=data, api_version=api_version, object_id=object_id
+        )
+
     async def delete(
         self, path: str, params: dict[str, Any] | None = None, api_version: str = "v1"
     ) -> dict[str, Any]:
