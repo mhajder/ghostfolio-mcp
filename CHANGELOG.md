@@ -1,3 +1,15 @@
+## v1.4.0 (2026-05-11)
+
+### Feat
+
+- **tools**: add delete_asset_profile (#32)
+- **tools**: add upsert_asset_profile (#31)
+- **tools**: add add_market_data_points (#30)
+
+### Fix
+
+- **docker**: scope healthcheck to http transport mode (#33)
+
 ## v1.3.0 (2026-05-09)
 
 ### Feat
