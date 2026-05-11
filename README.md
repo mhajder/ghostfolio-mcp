@@ -283,6 +283,7 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 ### Market Data & Symbol Tools
 
 - `get_market_data_for_asset`: Get market data for a specific asset
+- `add_market_data_points`: Add one or more market data points for an asset (typically a `MANUAL` data source — Ghostfolio rejects writes for auto-fetched sources)
 - `get_symbol_data`: Get symbol data for a specific asset from a data source
 - `get_historical_data`: Get historical data for a specific symbol on a specific date
 - `lookup_symbols`: Search for symbols using a query string
