@@ -308,6 +308,43 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 f"admin/profile-data/{data_source}/{symbol}", data=patch_payload
             )
 
+    @mcp.tool(
+        tags={"asset", "profile", "delete"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+        },
+    )
+    async def delete_asset_profile(
+        data_source: Annotated[
+            str,
+            Field(
+                description="Data source for the symbol. Typically 'MANUAL' — Ghostfolio rejects profile-data deletes for auto-fetched sources"
+            ),
+        ],
+        symbol: Annotated[
+            str,
+            Field(description="Symbol/ticker of the asset to delete"),
+        ],
+    ) -> dict[str, Any]:
+        """
+        Delete an asset profile.
+
+        Removes the profile-data record for the given data source and symbol.
+        Be careful, this might delete associated activities and market data
+        depending on backend rules!
+
+        Args:
+            data_source: Data source (typically 'MANUAL')
+            symbol: Symbol/ticker of the asset to delete
+
+        Returns:
+            Dictionary containing the deletion status
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.delete(f"admin/profile-data/{data_source}/{symbol}")
+
     # =============================================================================
     # IMPORT ENDPOINTS
     # =============================================================================
