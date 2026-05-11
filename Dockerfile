@@ -46,7 +46,7 @@ HEALTHCHECK \
   --timeout=5s \
   --start-period=5s \
   --retries=3 \
-  CMD nc -z 127.0.0.1 8000 || exit 1
+  CMD if [ "$MCP_TRANSPORT" = "http" ]; then nc -z 127.0.0.1 "${MCP_HTTP_PORT:-8000}" || exit 1; fi
 
 ENV MCP_TRANSPORT=http
 ENV MCP_HTTP_HOST=0.0.0.0
