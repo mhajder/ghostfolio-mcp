@@ -505,7 +505,7 @@ def register_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         """
         async with get_ghostfolio_client(config) as client:
             params = {"accounts": account_id} if account_id else None
-            return await client.get("order", params=params)
+            return await client.get("activities", params=params)
 
     @mcp.tool(
         tags={"portfolio", "activities", "create"},
