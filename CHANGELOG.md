@@ -1,3 +1,9 @@
+## v1.4.1 (2026-06-05)
+
+### Fix
+
+- **tools**: get_orders hits renamed activities endpoint (#41)
+
 ## v1.4.0 (2026-05-11)
 
 ### Feat
