@@ -1,4 +1,6 @@
 import logging
+from datetime import UTC
+from datetime import datetime
 from typing import Annotated
 from typing import Any
 
@@ -106,13 +108,6 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 description="Optional platform ID for the account (e.g., broker or exchange identifier)",
             ),
         ] = None,
-        is_excluded: Annotated[
-            bool,
-            Field(
-                default=False,
-                description="Whether to exclude this account from portfolio calculations",
-            ),
-        ] = False,
     ) -> dict[str, Any]:
         """
         Create a new account in your portfolio.
@@ -121,13 +116,16 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         This is useful for organizing your investments across different
         account types or platforms.
 
+        Note: current Ghostfolio versions have no boolean "excluded" flag on an
+        account - exclusion from analysis is done by tagging the account, which
+        is outside this tool's scope.
+
         Args:
             name: Account name (required)
             currency: Account currency (required, e.g., 'USD', 'EUR')
             balance: Initial balance for the account (defaults to 0)
             comment: Optional comment or note for the account
             platform_id: Optional platform ID for the account
-            is_excluded: Whether to exclude this account from calculations
 
         Returns:
             Dictionary containing the created account information
@@ -138,7 +136,6 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 "currency": currency,
                 "balance": balance,
                 "comment": comment,
-                "isExcluded": is_excluded,
                 "platformId": platform_id,
             }
             return await client.post("account", data=account_data)
@@ -240,43 +237,55 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 description="Optional new platform ID for the account",
             ),
         ] = None,
-        is_excluded: Annotated[
-            bool | None,
-            Field(
-                default=None,
-                description="Optional boolean to exclude/include in portfolio calculations",
-            ),
-        ] = None,
     ) -> dict[str, Any]:
         """
         Update settings or details of an existing account.
+
+        Ghostfolio's update endpoint replaces the whole account record, so
+        `name`, `currency` and `platform_id` are required on every request even
+        when they are not changing. Any left unset here are backfilled from the
+        account's current state with a GET before the PUT, so you only need to
+        pass the fields you actually want to change.
+
+        Setting `balance` here applies it as *today's* entry in the account's
+        balance history (the same series `get_account_balances` returns and
+        `get_portfolio_holdings` derives its cash figure from) - it is not a
+        separate stale field. Use create_account_balance to set the balance
+        for a specific past date instead of today.
 
         Args:
             account_id: The unique ID of the account to update
             name: Optional new account name
             currency: Optional new account currency
-            balance: Optional new cash balance
+            balance: Optional new cash balance, recorded as today's balance-history entry
             comment: Optional new note/comment
             platform_id: Optional new platform ID
-            is_excluded: Optional new calculation exclusion boolean
 
         Returns:
             Dictionary containing the updated account status
         """
         async with get_ghostfolio_client(config) as client:
-            account_data: dict[str, Any] = {}
-            if name is not None:
-                account_data["name"] = name
-            if currency is not None:
-                account_data["currency"] = currency
+            current = await client.get(f"account/{quote_path_segment(account_id)}")
+
+            # id, name, currency and platformId are required by Ghostfolio's
+            # UpdateAccountDto on every request; fields the caller didn't
+            # override are backfilled from the account's current values.
+            account_data: dict[str, Any] = {
+                "id": account_id,
+                "name": name if name is not None else current.get("name"),
+                "currency": (
+                    currency if currency is not None else current.get("currency")
+                ),
+                "platformId": (
+                    platform_id
+                    if platform_id is not None
+                    else current.get("platformId")
+                ),
+            }
             if balance is not None:
                 account_data["balance"] = balance
             if comment is not None:
                 account_data["comment"] = comment
-            if is_excluded is not None:
-                account_data["isExcluded"] = is_excluded
-            if platform_id is not None:
-                account_data["platformId"] = platform_id
 
             return await client.put(
                 f"account/{quote_path_segment(account_id)}", data=account_data
@@ -322,3 +331,93 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 "balance": balance,
             }
             return await client.post("account/transfer-balance", data=payload)
+
+    @mcp.tool(
+        tags={"account", "balance", "create"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+        },
+    )
+    async def create_account_balance(
+        account_id: Annotated[
+            str,
+            Field(description="Account ID to record a balance entry for"),
+        ],
+        balance: Annotated[
+            float,
+            Field(description="Balance value to record for the given date"),
+        ],
+        date: Annotated[
+            str | None,
+            Field(
+                default=None,
+                description=(
+                    "ISO-8601 date for this balance entry, e.g. '2026-08-27'. "
+                    "Defaults to today."
+                ),
+            ),
+        ] = None,
+    ) -> dict[str, Any]:
+        """
+        Set an account's balance for a specific date in its balance history.
+
+        This writes directly to the balance-history series that
+        get_account_balances returns and that get_portfolio_holdings derives
+        its cash figure from - it is not the same as the account's summary
+        balance field. Calling this again for the same account and date
+        updates that entry instead of duplicating it, so setting today's
+        balance is just this call with `date` omitted.
+
+        The balance is recorded in the account's own currency; Ghostfolio's
+        API does not accept a separate currency for this endpoint.
+
+        Args:
+            account_id: Account ID to record a balance entry for
+            balance: Balance value for the given date
+            date: Optional ISO-8601 date (defaults to today)
+
+        Returns:
+            Dictionary containing the created/updated balance-history entry
+        """
+        async with get_ghostfolio_client(config) as client:
+            payload = {
+                "accountId": account_id,
+                "balance": balance,
+                "date": date or datetime.now(UTC).strftime("%Y-%m-%d"),
+            }
+            return await client.post("account-balance", data=payload)
+
+    @mcp.tool(
+        tags={"account", "balance", "delete"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "idempotentHint": False,
+        },
+    )
+    async def delete_account_balance(
+        balance_id: Annotated[
+            str,
+            Field(
+                description=(
+                    "ID of the balance-history entry to delete, from "
+                    "get_account_balances (not the account ID)"
+                )
+            ),
+        ],
+    ) -> dict[str, Any]:
+        """
+        Delete a single entry from an account's balance history.
+
+        Args:
+            balance_id: ID of the balance-history entry to delete
+
+        Returns:
+            Dictionary containing the deleted balance-history entry
+        """
+        async with get_ghostfolio_client(config) as client:
+            return await client.delete(
+                f"account-balance/{quote_path_segment(balance_id)}"
+            )

@@ -14,6 +14,30 @@ from ghostfolio_mcp.utils import quote_path_segment
 
 logger = logging.getLogger(__name__)
 
+# Response bodies are attacker/server controlled and can be arbitrarily large
+# (e.g. an HTML error page from a misconfigured reverse proxy); truncate what
+# we fold into an exception message.
+_MAX_ERROR_BODY_LENGTH = 2000
+
+
+def _annotate_with_response_body(exc: httpx.HTTPStatusError) -> httpx.HTTPStatusError:
+    """Fold the response body into an HTTPStatusError's message.
+
+    httpx's own message (e.g. "Client error '400 Bad Request' for url ...")
+    omits the body, which is where Ghostfolio's NestJS validation errors put
+    the actual reason. Re-raising a new instance with the same request/response
+    keeps ``exc.response.status_code`` usable by callers that inspect it
+    (see assets.py's upsert_asset_profile) while making the body visible
+    wherever the exception is stringified.
+    """
+    body = exc.response.text.strip()
+    if len(body) > _MAX_ERROR_BODY_LENGTH:
+        body = body[:_MAX_ERROR_BODY_LENGTH] + "... (truncated)"
+    message = str(exc)
+    if body:
+        message = f"{message} | response body: {body}"
+    return httpx.HTTPStatusError(message, request=exc.request, response=exc.response)
+
 
 class GhostfolioClient:
     """Async client for Ghostfolio API using API token authentication"""
@@ -78,7 +102,10 @@ class GhostfolioClient:
         resp = await self.client.post(
             "/v1/auth/anonymous/", json={"accessToken": self.config.token}
         )
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise _annotate_with_response_body(exc) from exc
         result = resp.json()
         self._jwt_token = result["authToken"]
         self._jwt_token_expiry = datetime.now(UTC) + timedelta(days=30)
@@ -135,7 +162,10 @@ class GhostfolioClient:
         resp = await self.client.request(
             method, url_path, params=params, json=data, headers=headers
         )
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise _annotate_with_response_body(exc) from exc
         # Some Ghostfolio admin endpoints (e.g. PATCH
         # /admin/profile-data/MANUAL/<symbol>) return 200 with an empty body.
         # resp.json() raises JSONDecodeError on empty content; treat empty as

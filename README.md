@@ -281,6 +281,8 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 - `get_account_details`: Get details for a specific account
 - `update_account`: Update settings or details of an existing account
 - `transfer_account_balance`: Transfer cash balances between two accounts
+- `create_account_balance`: Set an account's balance for a specific date in its balance history (defaults to today)
+- `delete_account_balance`: Delete a single entry from an account's balance history
 
 ### Portfolio & Transaction Management Tools
 

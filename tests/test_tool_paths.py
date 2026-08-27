@@ -141,9 +141,9 @@ async def call(mcp: FastMCP, name: str, arguments: dict) -> None:
             "/api/v1/account/a%23b",
         ),
         (
-            "update_account",
-            {"account_id": "a#b", "name": "renamed"},
-            "/api/v1/account/a%23b",
+            "delete_account_balance",
+            {"balance_id": "a#b"},
+            "/api/v1/account-balance/a%23b",
         ),
     ],
 )
@@ -171,6 +171,17 @@ async def test_upsert_asset_profile_encodes_both_requests(tools):
     assert paths == [
         "/api/v1/admin/profile-data/MANUAL/A%23B",
         "/api/v1/admin/profile-data/MANUAL/A%23B",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_update_account_encodes_both_requests(tools):
+    mcp, paths = tools
+    await call(mcp, "update_account", {"account_id": "a#b", "name": "renamed"})
+    # GET to backfill required fields, then PUT, both against the encoded id.
+    assert paths == [
+        "/api/v1/account/a%23b/",
+        "/api/v1/account/a%23b",
     ]
 
 
