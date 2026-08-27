@@ -1,3 +1,9 @@
+## v1.6.1 (2026-08-27)
+
+### Fix
+
+- **accounts**: fix account-balance writes (#71)
+
 ## v1.6.0 (2026-08-19)
 
 ### Feat
