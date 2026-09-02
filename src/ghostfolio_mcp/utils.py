@@ -40,7 +40,7 @@ def quote_path_segment(value: str) -> str:
 
     Nothing is treated as safe, so ``/`` becomes ``%2F`` and stays inside the
     segment. Values made up of unreserved characters (the common case, e.g.
-    ``AAPL``, ``2026-04-30`` or a UUID) come back unchanged, and httpx does not
+    ``AAPL``, ``2026-04-30`` or a UUID) come back unchanged, and httpx2 does not
     re-encode the escapes this produces.
 
     Two cases percent-encoding alone does not cover, because ``.`` is an

@@ -11,7 +11,7 @@ import json
 from datetime import UTC
 from datetime import datetime
 
-import httpx
+import httpx2
 import pytest
 from fastmcp import FastMCP
 
@@ -36,22 +36,22 @@ def recorder():
     mcp = FastMCP(name="test")
     register_tools(mcp, config)
 
-    requests: list[httpx.Request] = []
-    responses: list[httpx.Response] = []
+    requests: list[httpx2.Request] = []
+    responses: list[httpx2.Response] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == AUTH_PATH:
-            return httpx.Response(200, json={"authToken": "jwt"})
+            return httpx2.Response(200, json={"authToken": "jwt"})
         requests.append(request)
-        return responses.pop(0) if responses else httpx.Response(200, json={})
+        return responses.pop(0) if responses else httpx2.Response(200, json={})
 
     # The client is a singleton twice over - a class attribute and a module
     # global - so reset both to give each test its own transport.
     GhostfolioClient._instance = None
     client_module._ghostfolio_client_singleton = None
     client = client_module.get_ghostfolio_client(config)
-    client.client = httpx.AsyncClient(
-        base_url=client.base_url, transport=httpx.MockTransport(handler)
+    client.client = httpx2.AsyncClient(
+        base_url=client.base_url, transport=httpx2.MockTransport(handler)
     )
 
     yield mcp, requests, responses
@@ -72,7 +72,7 @@ async def test_update_account_backfills_required_fields_from_current_account(
 ):
     mcp, requests, responses = recorder
     responses.append(
-        httpx.Response(
+        httpx2.Response(
             200,
             json={
                 "id": "acc-1",
@@ -103,7 +103,7 @@ async def test_update_account_backfills_required_fields_from_current_account(
 async def test_update_account_overrides_take_precedence_over_current_values(recorder):
     mcp, requests, responses = recorder
     responses.append(
-        httpx.Response(
+        httpx2.Response(
             200,
             json={
                 "id": "acc-1",
@@ -174,7 +174,7 @@ async def test_delete_account_balance_deletes_by_balance_id(recorder):
 async def test_failed_write_surfaces_api_error_body(recorder):
     mcp, _requests, responses = recorder
     responses.append(
-        httpx.Response(
+        httpx2.Response(
             400,
             json={
                 "message": ["currency must be a valid currency code"],
@@ -185,7 +185,7 @@ async def test_failed_write_surfaces_api_error_body(recorder):
     )
 
     with pytest.raises(
-        httpx.HTTPStatusError, match="currency must be a valid currency code"
+        httpx2.HTTPStatusError, match="currency must be a valid currency code"
     ):
         await call(
             mcp, "create_account_balance", {"account_id": "acc-1", "balance": 100.0}
@@ -195,9 +195,9 @@ async def test_failed_write_surfaces_api_error_body(recorder):
 @pytest.mark.asyncio
 async def test_failed_write_error_body_is_truncated_when_large(recorder):
     mcp, _requests, responses = recorder
-    responses.append(httpx.Response(400, text="x" * 5000))
+    responses.append(httpx2.Response(400, text="x" * 5000))
 
-    with pytest.raises(httpx.HTTPStatusError, match=r"\(truncated\)") as exc_info:
+    with pytest.raises(httpx2.HTTPStatusError, match=r"\(truncated\)") as exc_info:
         await call(
             mcp, "create_account_balance", {"account_id": "acc-1", "balance": 100.0}
         )

@@ -1,13 +1,13 @@
 """End-to-end checks that tool arguments cannot rewrite the request path.
 
-These drive the registered tools with a mocked httpx transport and assert on
+These drive the registered tools with a mocked httpx2 transport and assert on
 the raw path that reaches the wire, which is the only place the bug was
 observable: a symbol containing '#' or '/' used to change which resource the
 request addressed, so writes and deletes silently hit a different symbol and
 returned success for it.
 """
 
-import httpx
+import httpx2
 import pytest
 from fastmcp import FastMCP
 
@@ -30,19 +30,19 @@ def tools():
 
     paths: list[str] = []
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         if request.url.path == AUTH_PATH:
-            return httpx.Response(200, json={"authToken": "jwt"})
+            return httpx2.Response(200, json={"authToken": "jwt"})
         paths.append(request.url.raw_path.decode())
-        return httpx.Response(200, json={})
+        return httpx2.Response(200, json={})
 
     # The client is a singleton twice over - a class attribute and a module
     # global - so reset both to give each test its own transport.
     GhostfolioClient._instance = None
     client_module._ghostfolio_client_singleton = None
     client = client_module.get_ghostfolio_client(config)
-    client.client = httpx.AsyncClient(
-        base_url=client.base_url, transport=httpx.MockTransport(handler)
+    client.client = httpx2.AsyncClient(
+        base_url=client.base_url, transport=httpx2.MockTransport(handler)
     )
 
     yield mcp, paths

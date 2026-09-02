@@ -2,7 +2,7 @@ import logging
 from typing import Annotated
 from typing import Any
 
-import httpx
+import httpx2
 from fastmcp import FastMCP
 from pydantic import Field
 
@@ -132,7 +132,7 @@ def register_assets_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             # loudly if the profile genuinely does not exist.
             try:
                 await client.post(profile_path, data={})
-            except httpx.HTTPStatusError as exc:
+            except httpx2.HTTPStatusError as exc:
                 if exc.response.status_code != 500:
                     raise
 

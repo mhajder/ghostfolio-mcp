@@ -5,7 +5,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Any
 
-import httpx
+import httpx2
 
 from ghostfolio_mcp.models import GhostfolioConfig
 from ghostfolio_mcp.models import TransportConfig
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 _MAX_ERROR_BODY_LENGTH = 2000
 
 
-def _annotate_with_response_body(exc: httpx.HTTPStatusError) -> httpx.HTTPStatusError:
+def _annotate_with_response_body(exc: httpx2.HTTPStatusError) -> httpx2.HTTPStatusError:
     """Fold the response body into an HTTPStatusError's message.
 
-    httpx's own message (e.g. "Client error '400 Bad Request' for url ...")
+    httpx2's own message (e.g. "Client error '400 Bad Request' for url ...")
     omits the body, which is where Ghostfolio's NestJS validation errors put
     the actual reason. Re-raising a new instance with the same request/response
     keeps ``exc.response.status_code`` usable by callers that inspect it
@@ -36,7 +36,7 @@ def _annotate_with_response_body(exc: httpx.HTTPStatusError) -> httpx.HTTPStatus
     message = str(exc)
     if body:
         message = f"{message} | response body: {body}"
-    return httpx.HTTPStatusError(message, request=exc.request, response=exc.response)
+    return httpx2.HTTPStatusError(message, request=exc.request, response=exc.response)
 
 
 class GhostfolioClient:
@@ -61,7 +61,7 @@ class GhostfolioClient:
         # Ensure trailing slash for base_url
         base = config.ghostfolio_url.rstrip("/")
         self.base_url = f"{base}/api"
-        self.client: httpx.AsyncClient | None = None
+        self.client: httpx2.AsyncClient | None = None
         self._jwt_token: str | None = None
         self._jwt_token_expiry: datetime | None = None
         self._initialized = True
@@ -69,7 +69,7 @@ class GhostfolioClient:
     async def __aenter__(self):
         """Enter the async context manager."""
         if self.client is None:
-            self.client = httpx.AsyncClient(
+            self.client = httpx2.AsyncClient(
                 verify=self.config.verify_ssl,
                 timeout=self.config.timeout,
                 base_url=self.base_url,
@@ -104,7 +104,7 @@ class GhostfolioClient:
         )
         try:
             resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
+        except httpx2.HTTPStatusError as exc:
             raise _annotate_with_response_body(exc) from exc
         result = resp.json()
         self._jwt_token = result["authToken"]
@@ -164,7 +164,7 @@ class GhostfolioClient:
         )
         try:
             resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
+        except httpx2.HTTPStatusError as exc:
             raise _annotate_with_response_body(exc) from exc
         # Some Ghostfolio admin endpoints (e.g. PATCH
         # /admin/profile-data/MANUAL/<symbol>) return 200 with an empty body.
