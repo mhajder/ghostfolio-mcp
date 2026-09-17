@@ -96,17 +96,32 @@ def register_assets_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 description="Optional asset sub-class (e.g., 'MUTUALFUND', 'CASH', 'ETF')",
             ),
         ] = "",
+        countries: Annotated[
+            list[dict[str, Any]] | None,
+            Field(
+                default=None,
+                description="Optional country allocation. Entries must contain exactly 'code' (ISO 3166-1 alpha-2, e.g. 'US') and 'weight' (a fraction between 0 and 1, e.g. 0.6907) — any extra key, such as the 'continent' and 'name' that reads add, is rejected with HTTP 400. Omit to leave the stored value untouched; pass [] to reset (on 'MANUAL' this empties the list, on fetched sources it drops the override and the data provider's own countries apply again)",
+            ),
+        ] = None,
+        sectors: Annotated[
+            list[dict[str, Any]] | None,
+            Field(
+                default=None,
+                description="Optional sector allocation. Entries must contain exactly 'name' and 'weight' (a fraction between 0 and 1, e.g. 0.2431); any extra key is rejected with HTTP 400. Omit to leave the stored value untouched; pass [] to reset (on 'MANUAL' this empties the list, on fetched sources it drops the override and the data provider's own sectors apply again)",
+            ),
+        ] = None,
     ) -> dict[str, Any]:
         """
         Create-or-update an asset profile.
 
-        POSTs an empty profile-data record (idempotent — Ghostfolio returns
-        HTTP 500 on both duplicate-create and some first-time-create paths
-        while still persisting the record, so this tolerates 500). Then
-        PATCHes metadata (name, currency, asset class, optional sub-class).
-        PATCH is the source of truth — if the profile doesn't exist after
-        the POST, PATCH will surface a 404. Calling twice with the same
-        input yields the same end state.
+        POSTs an empty profile-data record (idempotent — Ghostfolio answers
+        HTTP 400 "already exists" when the profile is already there, and
+        HTTP 500 on some first-time-create paths while still persisting the
+        record, so this tolerates both). Then PATCHes metadata (name,
+        currency, asset class, optional sub-class, optional country and
+        sector allocations). PATCH is the source of truth — if the profile
+        doesn't exist after the POST, PATCH will surface the error. Calling
+        twice with the same input yields the same end state.
 
         Args:
             data_source: Data source (typically 'MANUAL')
@@ -115,6 +130,8 @@ def register_assets_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             currency: Currency code
             asset_class: One of the Ghostfolio enum values
             asset_sub_class: Optional sub-class
+            countries: Optional list of {code, weight} entries
+            sectors: Optional list of {name, weight} entries
 
         Returns:
             Dictionary containing the final profile state from the PATCH response
@@ -124,16 +141,20 @@ def register_assets_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 f"admin/profile-data/{quote_path_segment(data_source)}"
                 f"/{quote_path_segment(symbol)}"
             )
-            # POST admin/profile-data/{source}/{symbol} creates the record but
-            # Ghostfolio responds with HTTP 500 on both the duplicate-create
-            # path and (observed against v3.2.0) some first-time-create paths,
-            # while still persisting the record. Tolerate 500 here and treat
-            # the subsequent PATCH as the source of truth — PATCH will 404
-            # loudly if the profile genuinely does not exist.
+            # POST admin/profile-data/{source}/{symbol} creates the record.
+            # Two failure modes are expected and harmless here: Ghostfolio
+            # answers 400 "Asset profile of X (Y) already exists" when the
+            # profile is already there (the common case when overriding an
+            # auto-fetched profile), and 500 on some first-time-create paths
+            # while still persisting the record. Tolerate both and treat the
+            # subsequent PATCH as the source of truth. The POST's other 400,
+            # "Asset profile not found for X (Y)", must still surface.
             try:
                 await client.post(profile_path, data={})
             except httpx2.HTTPStatusError as exc:
-                if exc.response.status_code != 500:
+                status = exc.response.status_code
+                already_exists = status == 400 and "already exists" in exc.response.text
+                if status != 500 and not already_exists:
                     raise
 
             patch_payload: dict[str, Any] = {
@@ -143,6 +164,12 @@ def register_assets_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             }
             if asset_sub_class:
                 patch_payload["assetSubClass"] = asset_sub_class
+            # None and [] mean different things upstream: omitting the key
+            # leaves the stored allocation alone, sending [] clears it.
+            if countries is not None:
+                patch_payload["countries"] = countries
+            if sectors is not None:
+                patch_payload["sectors"] = sectors
 
             return await client.patch(profile_path, data=patch_payload)
 
