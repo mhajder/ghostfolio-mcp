@@ -1,3 +1,9 @@
+## v1.7.0 (2026-09-17)
+
+### Feat
+
+- **assets**: support countries and sectors in upsert_asset_profile
+
 ## v1.6.2 (2026-09-02)
 
 ## v1.6.1 (2026-08-27)
