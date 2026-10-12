@@ -31,7 +31,6 @@ jobs:
           generate_release_notes: true
           append_body: true
           body: |
-            ## Docker Images
+            ## Docker Image
             - `ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.tag_name }}`
-            - `ghcr.io/${{ github.repository }}o:${{ steps.get_version.outputs.tag_name }}`
           prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-') }}

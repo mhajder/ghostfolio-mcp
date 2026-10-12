@@ -549,17 +549,28 @@ When using tools that require a data source parameter, specify the appropriate s
 
 ## Using Docker
 
-A Docker images are available on GitHub Packages for easy deployment.
+A Docker image is available on GitHub Packages for easy deployment. It runs the
+HTTP Streamable transport on port 8000 (`/mcp`).
 
 ```sh
-# Normal STDIO image
 docker pull ghcr.io/mhajder/ghostfolio-mcp:latest
-
-# MCPO image for usage with Open WebUI
-docker pull ghcr.io/mhajder/ghostfolio-mcpo:latest
 ```
 
 When [OIDC authentication](#oidc--oauth-authentication-optional) is enabled, mount a volume on `/data` so OAuth client registrations survive container recreation.
+
+### Open WebUI
+
+Open WebUI 0.6.31 and later connect to the image directly; the separate MCPO
+image (`ghcr.io/mhajder/ghostfolio-mcpo`) is no longer published. In Open WebUI,
+go to **Admin Settings > Integrations > External Tool Servers**, add a connection
+of type **MCP (Streamable HTTP)** with the URL `http://<host>:8000/mcp`, and set
+Bearer authentication to your `MCP_HTTP_BEARER_TOKEN`.
+
+If [OIDC authentication](#oidc--oauth-authentication-optional) is enabled, it
+takes precedence and the bearer token is not accepted. Use the URL
+`OIDC_BASE_URL` + `/mcp` and choose **OAuth 2.1** authentication instead; Open
+WebUI registers itself as a client, so if you set `OIDC_ALLOWED_REDIRECT_URIS`,
+include your Open WebUI URL in it.
 
 ## Contributing
 
