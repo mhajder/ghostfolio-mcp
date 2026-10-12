@@ -1,5 +1,6 @@
 """The container healthcheck must ask the server itself, not just the port."""
 
+import contextlib
 import http.client
 import json
 import os
@@ -164,7 +165,7 @@ def test_transport_from_dotenv_is_probed(monkeypatch, closed_port):
     assert healthcheck.main() == 1
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def oidc_discovery_url() -> Iterator[str]:
     """Serve a minimal OIDC discovery document, standing in for an IdP."""
     port_holder: list[int] = []
@@ -226,52 +227,83 @@ def _post_mcp(port: int) -> int:
         conn.close()
 
 
-@pytest.mark.parametrize("auth", ["bearer", "oidc"])
-def test_real_server_health_endpoint_needs_no_credentials(
-    request, monkeypatch, closed_port, tmp_path, auth
-):
-    """End to end: the server's /health answers the probe whatever the auth mode."""
-    port = closed_port
+REAL_SERVER_AUTH_MODES = ("bearer", "oidc")
+
+
+def _free_ports(count: int) -> list[int]:
+    """Distinct free ports; every socket stays bound until all are picked."""
+    with contextlib.ExitStack() as stack:
+        socks = [stack.enter_context(socket.socket()) for _ in range(count)]
+        for sock in socks:
+            sock.bind(("127.0.0.1", 0))
+        return [sock.getsockname()[1] for sock in socks]
+
+
+@pytest.fixture(scope="module")
+def real_servers(
+    tmp_path_factory, oidc_discovery_url
+) -> Iterator[dict[str, tuple[subprocess.Popen, int]]]:
+    """Start a server for every REAL_SERVER_AUTH_MODES mode at once.
+
+    Each one spends about 1.5 s importing before it listens; started one test
+    at a time, that wait was paid once per mode.
+    """
     blank_oidc = dict.fromkeys(
         ("OIDC_CONFIG_URL", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET", "OIDC_BASE_URL"),
         "",
     )
-    env = {
-        **os.environ,
-        **blank_oidc,
-        # Unreachable on purpose: /health must not depend on Ghostfolio.
-        "GHOSTFOLIO_URL": "https://ghostfolio.invalid",
-        "GHOSTFOLIO_TOKEN": "t",
-        "MCP_TRANSPORT": "http",
-        "MCP_HTTP_HOST": "127.0.0.1",
-        "MCP_HTTP_PORT": str(port),
-        "MCP_HTTP_BEARER_TOKEN": "secret",
-        "SENTRY_DSN": "",
-        "FASTMCP_HOME": str(tmp_path / "fastmcp"),
-    }
-    if auth == "oidc":
-        env |= {
-            "OIDC_CONFIG_URL": request.getfixturevalue("oidc_discovery_url"),
-            "OIDC_CLIENT_ID": "client-id",
-            "OIDC_CLIENT_SECRET": "client-secret",
-            "OIDC_BASE_URL": f"http://127.0.0.1:{port}",
-        }
-    server = subprocess.Popen(
-        [sys.executable, "-c", "import ghostfolio_mcp.server as s; s.main()"],
-        env=env,
-        cwd=tmp_path,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    ports = _free_ports(len(REAL_SERVER_AUTH_MODES))
+    servers: dict[str, tuple[subprocess.Popen, int]] = {}
     try:
-        _configure(monkeypatch, port)
-        deadline = time.monotonic() + 30
-        while healthcheck.main() != 0:
-            assert server.poll() is None, "server exited"
-            assert time.monotonic() < deadline, "server never became healthy"
-            time.sleep(0.05)
-        # The MCP endpoint itself is protected, so auth is really enabled.
-        assert _post_mcp(port) == 401
+        for auth, port in zip(REAL_SERVER_AUTH_MODES, ports, strict=True):
+            workdir = tmp_path_factory.mktemp(auth)
+            env = {
+                **os.environ,
+                **blank_oidc,
+                # Unreachable on purpose: /health must not depend on Ghostfolio.
+                "GHOSTFOLIO_URL": "https://ghostfolio.invalid",
+                "GHOSTFOLIO_TOKEN": "t",
+                "MCP_TRANSPORT": "http",
+                "MCP_HTTP_HOST": "127.0.0.1",
+                "MCP_HTTP_PORT": str(port),
+                "MCP_HTTP_BEARER_TOKEN": "secret",
+                "SENTRY_DSN": "",
+                "FASTMCP_HOME": str(workdir / "fastmcp"),
+            }
+            if auth == "oidc":
+                env |= {
+                    "OIDC_CONFIG_URL": oidc_discovery_url,
+                    "OIDC_CLIENT_ID": "client-id",
+                    "OIDC_CLIENT_SECRET": "client-secret",
+                    "OIDC_BASE_URL": f"http://127.0.0.1:{port}",
+                }
+            server = subprocess.Popen(
+                [sys.executable, "-c", "import ghostfolio_mcp.server as s; s.main()"],
+                env=env,
+                cwd=workdir,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            servers[auth] = (server, port)
+        yield servers
     finally:
-        server.terminate()
-        server.wait(timeout=10)
+        for server, _ in servers.values():
+            server.terminate()
+        for server, _ in servers.values():
+            server.wait(timeout=10)
+
+
+@pytest.mark.parametrize("auth", REAL_SERVER_AUTH_MODES)
+def test_real_server_health_endpoint_needs_no_credentials(
+    monkeypatch, real_servers, auth
+):
+    """End to end: the server's /health answers the probe whatever the auth mode."""
+    server, port = real_servers[auth]
+    _configure(monkeypatch, port)
+    deadline = time.monotonic() + 30
+    while healthcheck.main() != 0:
+        assert server.poll() is None, "server exited"
+        assert time.monotonic() < deadline, "server never became healthy"
+        time.sleep(0.05)
+    # The MCP endpoint itself is protected, so auth is really enabled.
+    assert _post_mcp(port) == 401
