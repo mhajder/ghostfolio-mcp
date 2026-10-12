@@ -47,10 +47,10 @@ ENV FASTMCP_HOME=/data
 
 HEALTHCHECK \
   --interval=15s \
-  --timeout=5s \
+  --timeout=10s \
   --start-period=5s \
   --retries=3 \
-  CMD if [ "$MCP_TRANSPORT" = "http" ]; then nc -z 127.0.0.1 "${MCP_HTTP_PORT:-8000}" || exit 1; fi
+  CMD ["python", "-m", "ghostfolio_mcp.healthcheck"]
 
 ENV MCP_TRANSPORT=http
 ENV MCP_HTTP_HOST=0.0.0.0

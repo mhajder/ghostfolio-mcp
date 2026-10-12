@@ -16,12 +16,16 @@ from fastmcp import settings
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 from fastmcp.server.transforms.search import BM25SearchTransform
 from fastmcp.server.transforms.search import RegexSearchTransform
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from ghostfolio_mcp.auth import build_auth_provider
 from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_config_from_env
 from ghostfolio_mcp.ghostfolio_client import get_transport_config_from_env
 from ghostfolio_mcp.sentry_init import init_sentry
 from ghostfolio_mcp.tools import register_tools
+from ghostfolio_mcp.utils import HEALTH_PATH
+from ghostfolio_mcp.utils import HTTP_TRANSPORTS
 
 # Load environment variables
 load_dotenv()
@@ -92,6 +96,20 @@ mcp = FastMCP(
 register_tools(mcp, GHOSTFOLIO_CONFIG)
 
 
+@mcp.custom_route(HEALTH_PATH, methods=["GET"], include_in_schema=False)
+async def health(_request: Request) -> PlainTextResponse:
+    """Liveness probe for the HTTP transports.
+
+    Answering proves the server handles requests, which a TCP connect does not:
+    the kernel completes the handshake even while the event loop is stuck. It
+    deliberately does not call Ghostfolio, so an outage there does not get a
+    healthy MCP server restarted. FastMCP serves custom routes outside the
+    bearer-token and OIDC auth, so the container healthcheck needs no
+    credentials.
+    """
+    return PlainTextResponse("ok")
+
+
 def configure_component_visibility() -> None:
     """Apply server-level visibility transforms for read-only and disabled tags."""
 
@@ -154,7 +172,7 @@ def main():
         raise SystemExit(1)
 
     if (
-        TRANSPORT_CONFIG.transport_type in {"sse", "http"}
+        TRANSPORT_CONFIG.transport_type in HTTP_TRANSPORTS
         and not TRANSPORT_CONFIG.http_bearer_token
         and not TRANSPORT_CONFIG.oidc_enabled
     ):

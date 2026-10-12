@@ -9,8 +9,11 @@ import httpx2
 
 from ghostfolio_mcp.models import GhostfolioConfig
 from ghostfolio_mcp.models import TransportConfig
+from ghostfolio_mcp.utils import http_host_from_env
+from ghostfolio_mcp.utils import http_port_from_env
 from ghostfolio_mcp.utils import parse_bool
 from ghostfolio_mcp.utils import quote_path_segment
+from ghostfolio_mcp.utils import transport_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -277,9 +280,9 @@ def get_transport_config_from_env() -> TransportConfig:
         return [item.strip() for item in raw.split(",") if item.strip()] or None
 
     return TransportConfig(
-        transport_type=os.getenv("MCP_TRANSPORT", "stdio").lower(),
-        http_host=os.getenv("MCP_HTTP_HOST", "127.0.0.1"),
-        http_port=int(os.getenv("MCP_HTTP_PORT", "8000")),
+        transport_type=transport_from_env(),
+        http_host=http_host_from_env(),
+        http_port=http_port_from_env(),
         http_bearer_token=http_bearer_token,
         oidc_config_url=_clean("OIDC_CONFIG_URL"),
         oidc_client_id=_clean("OIDC_CLIENT_ID"),

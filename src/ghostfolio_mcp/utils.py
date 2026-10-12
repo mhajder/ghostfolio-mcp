@@ -1,6 +1,48 @@
+import os
 from urllib.parse import quote
 
 TRUTHY_VALUES = ("1", "true", "yes", "on")
+
+# MCP_TRANSPORT values that serve HTTP. Anything else runs the stdio transport.
+HTTP_TRANSPORTS = frozenset({"sse", "http"})
+
+# Liveness endpoint served on the HTTP transports and probed by the container
+# healthcheck.
+HEALTH_PATH = "/health"
+
+
+def transport_from_env() -> str:
+    """
+    Return MCP_TRANSPORT lowercased, defaulting to stdio when unset.
+
+    The server and the container healthcheck both read the transport here, so
+    they always agree on it. Values outside HTTP_TRANSPORTS select stdio.
+    """
+    return os.getenv("MCP_TRANSPORT", "stdio").lower()
+
+
+def http_host_from_env() -> str:
+    """
+    Return MCP_HTTP_HOST without IPv6 brackets, defaulting to loopback when unset.
+
+    The server and the container healthcheck both read the bind address here,
+    so they always agree on it.
+    """
+    host = os.getenv("MCP_HTTP_HOST", "127.0.0.1")
+    # Accept the URL form of an IPv6 literal ('[::]'); uvicorn needs it bare.
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    return host
+
+
+def http_port_from_env() -> int:
+    """
+    Return MCP_HTTP_PORT as an integer, defaulting to 8000 when unset.
+
+    Raises:
+        ValueError: If the variable is set to something that is not an integer.
+    """
+    return int(os.getenv("MCP_HTTP_PORT", "8000"))
 
 
 def parse_bool(val, default=True):

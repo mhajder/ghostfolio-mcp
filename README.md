@@ -471,6 +471,17 @@ curl -H "Authorization: Bearer your-secret-token" \
 
 **Note**: The HTTP transport requires proper JSON-RPC formatting with `jsonrpc` and `id` fields. The server may also require session initialization for some operations.
 
+#### Health Endpoint
+
+Both HTTP transports (`sse` and `http`) serve `GET /health`, which answers `200 ok`
+when the server is handling requests. It needs no bearer token or OIDC login and
+does not contact Ghostfolio, so a Ghostfolio outage does not mark the MCP server
+unhealthy. The Docker image's `HEALTHCHECK` uses it:
+
+```sh
+curl http://localhost:8000/health
+```
+
 ### OIDC / OAuth Authentication (Optional)
 
 A static bearer token is enough for machine-to-machine clients, but many MCP clients can only authenticate over OAuth with Dynamic Client Registration. For those, the server can act as an OAuth interface in front of an existing OIDC identity provider (Authentik, Keycloak, PocketID, Auth0, Entra ID, ...) using FastMCP's `OIDCProxy`. Clients register and authenticate against this server; the server brokers the flow upstream. No Ghostfolio credential ever reaches the client.
