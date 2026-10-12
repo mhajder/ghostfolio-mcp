@@ -28,8 +28,7 @@ LABEL org.opencontainers.image.title="Ghostfolio MCP Server" \
       io.modelcontextprotocol.server.name="io.github.mhajder/ghostfolio-mcp"
 ENV PYTHONUNBUFFERED=1
 
-RUN apk add --no-cache ca-certificates \
-    && addgroup -g 10001 appuser \
+RUN addgroup -g 10001 appuser \
     && adduser -D -u 10001 -G appuser appuser \
     && mkdir -p /data \
     && chown appuser:appuser /data
