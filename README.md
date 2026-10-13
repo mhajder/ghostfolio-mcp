@@ -177,7 +177,7 @@ TOOL_SEARCH_MAX_RESULTS=5
 # SENTRY_DSN=https://your-key@o12345.ingest.us.sentry.io/6789
 # Optional Sentry configuration
 # SENTRY_TRACES_SAMPLE_RATE=1.0
-# SENTRY_SEND_DEFAULT_PII=true
+# SENTRY_SEND_DEFAULT_PII=false
 # SENTRY_ENVIRONMENT=production
 # SENTRY_RELEASE=1.2.3
 # SENTRY_PROFILE_SESSION_SAMPLE_RATE=1.0
@@ -235,8 +235,9 @@ SENTRY_DSN=https://your-key@o12345.ingest.us.sentry.io/6789
 # Optional: Performance monitoring sample rate (0.0-1.0, default: 1.0)
 SENTRY_TRACES_SAMPLE_RATE=1.0
 
-# Optional: Include personally identifiable information (default: true)
-SENTRY_SEND_DEFAULT_PII=true
+# Optional: Include personally identifiable information (default: false).
+# When true, tool inputs and outputs (portfolio data) are sent to Sentry.
+SENTRY_SEND_DEFAULT_PII=false
 
 # Optional: Environment name (e.g., "production", "staging")
 SENTRY_ENVIRONMENT=production

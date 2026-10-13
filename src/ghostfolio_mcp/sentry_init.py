@@ -42,7 +42,10 @@ def init_sentry() -> bool:
     try:
         # Parse configuration from environment variables
         traces_sample_rate = env_float("SENTRY_TRACES_SAMPLE_RATE", 1.0)
-        send_default_pii = env_bool("SENTRY_SEND_DEFAULT_PII", default=True)
+        # Off unless asked for. With it on, the MCP integration attaches tool
+        # arguments and results to every event - holdings, orders, account
+        # balances - and ships them to a third party.
+        send_default_pii = env_bool("SENTRY_SEND_DEFAULT_PII", default=False)
         environment = env_str("SENTRY_ENVIRONMENT")
         release = env_str("SENTRY_RELEASE")
         profile_session_sample_rate = env_float(
