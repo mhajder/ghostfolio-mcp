@@ -23,14 +23,15 @@ HEALTH_PATH = "/health"
 
 def transport_from_env() -> str:
     """
-    Return MCP_TRANSPORT lowercased, defaulting to stdio when unset.
+    Return MCP_TRANSPORT stripped and lowercased, defaulting to stdio when
+    unset or blank.
 
     The server and the container healthcheck both read the transport here, so
     they always agree on it. Values outside HTTP_TRANSPORTS select stdio.
 
     'streamable-http' is read as 'http', FastMCP's name for that transport.
     """
-    transport = os.getenv("MCP_TRANSPORT", "stdio").lower()
+    transport = (env_str("MCP_TRANSPORT") or "stdio").lower()
     return TRANSPORT_ALIASES.get(transport, transport)
 
 

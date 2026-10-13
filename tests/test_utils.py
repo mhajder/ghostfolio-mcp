@@ -112,9 +112,10 @@ def test_quote_path_segment_rejects_empty(value):
         ("SSE", "sse"),
         # FastMCP's name for the streamable HTTP transport.
         ("streamable-http", "http"),
-        # Only lowercased: anything else selects stdio in the server.
-        (" http ", " http "),
-        ("", ""),
+        # Surrounding spaces are ignored, and blank means stdio.
+        (" http ", "http"),
+        ("", "stdio"),
+        ("  ", "stdio"),
     ],
 )
 def test_transport_from_env(monkeypatch, raw, expected):
