@@ -175,3 +175,20 @@ def test_blank_bearer_token_counts_as_unset(monkeypatch, value):
 def test_bearer_token_is_stripped(monkeypatch):
     monkeypatch.setenv("MCP_HTTP_BEARER_TOKEN", "  s3cret  ")
     assert get_transport_config_from_env().http_bearer_token == "s3cret"  # noqa: S105
+
+
+@pytest.mark.parametrize("transport", [None, "stdio"])
+def test_port_is_not_parsed_for_stdio(monkeypatch, transport):
+    """A leftover MCP_HTTP_PORT must not stop stdio or `fastmcp run`."""
+    if transport is not None:
+        monkeypatch.setenv("MCP_TRANSPORT", transport)
+    monkeypatch.setenv("MCP_HTTP_PORT", "not-a-port")
+    assert get_transport_config_from_env().http_port == 8000
+
+
+@pytest.mark.parametrize("transport", ["http", "sse"])
+def test_port_is_parsed_for_http_transports(monkeypatch, transport):
+    monkeypatch.setenv("MCP_TRANSPORT", transport)
+    monkeypatch.setenv("MCP_HTTP_PORT", "not-a-port")
+    with pytest.raises(ValueError, match="MCP_HTTP_PORT must be an integer"):
+        get_transport_config_from_env()
