@@ -5,7 +5,7 @@ Optional Sentry integration for error tracking and monitoring.
 import logging
 import os
 
-from ghostfolio_mcp.utils import parse_bool
+from ghostfolio_mcp.utils import env_bool
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,7 @@ def init_sentry() -> bool:
     try:
         # Parse configuration from environment variables
         traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
-        send_default_pii = parse_bool(
-            os.getenv("SENTRY_SEND_DEFAULT_PII"), default=True
-        )
+        send_default_pii = env_bool("SENTRY_SEND_DEFAULT_PII", default=True)
         environment: str | None = os.getenv("SENTRY_ENVIRONMENT")
         release: str | None = os.getenv("SENTRY_RELEASE")
         profile_session_sample_rate = float(
@@ -53,7 +51,7 @@ def init_sentry() -> bool:
         profile_lifecycle: str = (
             "manual" if profile_lifecycle_str == "manual" else "trace"
         )
-        enable_logs = parse_bool(os.getenv("SENTRY_ENABLE_LOGS"), default=True)
+        enable_logs = env_bool("SENTRY_ENABLE_LOGS", default=True)
 
         # Get package version for default release
         if not release:

@@ -156,3 +156,10 @@ def test_missing_oidc_settings_reports_each_absent_field(omitted):
 # Nothing to report when OIDC is fully configured or not configured at all.
 def test_missing_oidc_settings_is_empty_when_all_or_nothing_is_set(settings):
     assert TransportConfig(**settings).missing_oidc_settings() == []
+
+
+@pytest.mark.parametrize("name", ["OIDC_VERIFY_ID_TOKEN", "OIDC_FORWARD_RESOURCE"])
+def test_unknown_oidc_bool_setting_is_rejected(monkeypatch, name):
+    monkeypatch.setenv(name, "yep")
+    with pytest.raises(ValueError, match=f"{name} must be one of"):
+        get_transport_config_from_env()

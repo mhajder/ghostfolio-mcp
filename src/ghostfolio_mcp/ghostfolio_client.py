@@ -9,9 +9,9 @@ import httpx2
 
 from ghostfolio_mcp.models import GhostfolioConfig
 from ghostfolio_mcp.models import TransportConfig
+from ghostfolio_mcp.utils import env_bool
 from ghostfolio_mcp.utils import http_host_from_env
 from ghostfolio_mcp.utils import http_port_from_env
-from ghostfolio_mcp.utils import parse_bool
 from ghostfolio_mcp.utils import quote_path_segment
 from ghostfolio_mcp.utils import transport_from_env
 
@@ -242,14 +242,14 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
     return GhostfolioConfig(
         ghostfolio_url=os.getenv("GHOSTFOLIO_URL", ""),
         token=os.getenv("GHOSTFOLIO_TOKEN", ""),
-        verify_ssl=parse_bool(os.getenv("GHOSTFOLIO_VERIFY_SSL"), default=True),
+        verify_ssl=env_bool("GHOSTFOLIO_VERIFY_SSL", default=True),
         timeout=int(os.getenv("GHOSTFOLIO_TIMEOUT", "30")),
-        read_only_mode=parse_bool(os.getenv("READ_ONLY_MODE"), default=False),
+        read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
-        rate_limit_enabled=parse_bool(os.getenv("RATE_LIMIT_ENABLED"), default=False),
+        rate_limit_enabled=env_bool("RATE_LIMIT_ENABLED", default=False),
         rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
         rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
-        tool_search_enabled=parse_bool(os.getenv("TOOL_SEARCH_ENABLED"), default=False),
+        tool_search_enabled=env_bool("TOOL_SEARCH_ENABLED", default=False),
         tool_search_strategy=(
             "regex"
             if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
@@ -291,12 +291,8 @@ def get_transport_config_from_env() -> TransportConfig:
         oidc_redirect_path=_clean("OIDC_REDIRECT_PATH") or "/auth/callback",
         oidc_required_scopes=_csv("OIDC_REQUIRED_SCOPES"),
         oidc_allowed_redirect_uris=_csv("OIDC_ALLOWED_REDIRECT_URIS"),
-        oidc_verify_id_token=parse_bool(
-            os.getenv("OIDC_VERIFY_ID_TOKEN"), default=False
-        ),
-        oidc_forward_resource=parse_bool(
-            os.getenv("OIDC_FORWARD_RESOURCE"), default=False
-        ),
+        oidc_verify_id_token=env_bool("OIDC_VERIFY_ID_TOKEN", default=False),
+        oidc_forward_resource=env_bool("OIDC_FORWARD_RESOURCE", default=False),
     )
 
 

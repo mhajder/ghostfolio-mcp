@@ -1,5 +1,6 @@
 import pytest
 
+from ghostfolio_mcp.utils import env_bool
 from ghostfolio_mcp.utils import http_host_from_env
 from ghostfolio_mcp.utils import http_port_from_env
 from ghostfolio_mcp.utils import parse_bool
@@ -23,7 +24,7 @@ from ghostfolio_mcp.utils import transport_from_env
         ("0", True, False),
         ("false", True, False),
         ("no", True, False),
-        ("random", True, False),
+        ("off", True, False),
         ("False", True, False),
         # Blank means "unset", so the default wins rather than False.
         ("", True, True),
@@ -34,6 +35,29 @@ from ghostfolio_mcp.utils import transport_from_env
 )
 def test_parse_bool(val, default, expected):
     assert parse_bool(val, default) is expected
+
+
+@pytest.mark.parametrize("val", ["random", "enabled", "enable", "y", "2", "yep"])
+@pytest.mark.parametrize("default", [True, False])
+def test_parse_bool_rejects_unknown_values(val, default):
+    """A typo must not read as False: READ_ONLY_MODE=enable would expose writes."""
+    with pytest.raises(ValueError, match=f"got {val!r}"):
+        parse_bool(val, default)
+
+
+def test_env_bool_names_the_variable(monkeypatch):
+    monkeypatch.setenv("READ_ONLY_MODE", "enable")
+    with pytest.raises(ValueError, match="READ_ONLY_MODE must be one of true/false"):
+        env_bool("READ_ONLY_MODE", default=False)
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(None, True), ("", True), ("no", False)])
+def test_env_bool_reads_the_variable(monkeypatch, raw, expected):
+    if raw is None:
+        monkeypatch.delenv("GHOSTFOLIO_VERIFY_SSL", raising=False)
+    else:
+        monkeypatch.setenv("GHOSTFOLIO_VERIFY_SSL", raw)
+    assert env_bool("GHOSTFOLIO_VERIFY_SSL", default=True) is expected
 
 
 @pytest.mark.parametrize(

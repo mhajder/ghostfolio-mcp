@@ -132,6 +132,10 @@ uv run prek install
 
 ### Environment Variables
 
+Boolean settings accept `true/false`, `1/0`, `yes/no` and `on/off` (any case).
+Any other value stops the server at startup, so a typo cannot silently turn
+read-only mode or TLS verification off.
+
 ```env
 # Ghostfolio Connection Details
 GHOSTFOLIO_URL=https://domain.tld:3333
