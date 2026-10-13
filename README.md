@@ -39,7 +39,7 @@ Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server desi
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.11 to 3.15
 - Access to a Ghostfolio instance
 - Valid Ghostfolio API token
 
