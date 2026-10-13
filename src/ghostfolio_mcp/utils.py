@@ -1,4 +1,6 @@
 import os
+from collections.abc import Callable
+from typing import TypeVar
 from urllib.parse import quote
 
 TRUTHY_VALUES = ("true", "1", "yes", "on")
@@ -48,12 +50,59 @@ def http_host_from_env() -> str:
 
 def http_port_from_env() -> int:
     """
-    Return MCP_HTTP_PORT as an integer, defaulting to 8000 when unset.
+    Return MCP_HTTP_PORT as an integer, defaulting to 8000 when unset or blank.
 
     Raises:
         ValueError: If the variable is set to something that is not an integer.
     """
-    return int(os.getenv("MCP_HTTP_PORT", "8000"))
+    return env_int("MCP_HTTP_PORT", 8000)
+
+
+def env_str(name: str, default: str | None = None) -> str | None:
+    """
+    Read a string environment variable, stripped.
+
+    A blank or whitespace-only value counts as unset and yields the default, so
+    a declared-but-empty secret or URL is not mistaken for a real one.
+    """
+    value = (os.getenv(name) or "").strip()
+    return value or default
+
+
+_Number = TypeVar("_Number", int, float)
+
+
+def _env_number(
+    name: str, default: _Number, cast: Callable[[str], _Number], kind: str
+) -> _Number:
+    """Read a numeric environment variable, treating a blank value as unset."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return cast(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be {kind}, got {raw!r}") from None
+
+
+def env_int(name: str, default: int) -> int:
+    """
+    Read an integer environment variable, treating a blank value as unset.
+
+    Raises:
+        ValueError: If the variable is set to something that is not an integer.
+    """
+    return _env_number(name, default, int, "an integer")
+
+
+def env_float(name: str, default: float) -> float:
+    """
+    Read a float environment variable, treating a blank value as unset.
+
+    Raises:
+        ValueError: If the variable is set to something that is not a number.
+    """
+    return _env_number(name, default, float, "a number")
 
 
 def parse_bool(val, default=True):

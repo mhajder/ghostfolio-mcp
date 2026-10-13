@@ -132,6 +132,7 @@ uv run prek install
 
 ### Environment Variables
 
+A blank or whitespace-only value counts as unset and uses the default.
 Boolean settings accept `true/false`, `1/0`, `yes/no` and `on/off` (any case).
 Any other value stops the server at startup, so a typo cannot silently turn
 read-only mode or TLS verification off.

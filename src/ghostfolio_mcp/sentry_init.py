@@ -3,9 +3,10 @@ Optional Sentry integration for error tracking and monitoring.
 """
 
 import logging
-import os
 
 from ghostfolio_mcp.utils import env_bool
+from ghostfolio_mcp.utils import env_float
+from ghostfolio_mcp.utils import env_str
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ def init_sentry() -> bool:
         This function will silently return False if sentry-sdk is not installed
         or if SENTRY_DSN is not configured.
     """
-    sentry_dsn = os.getenv("SENTRY_DSN")
+    # Whitespace-only counts as unset, like the other blank settings.
+    sentry_dsn = env_str("SENTRY_DSN")
 
     if not sentry_dsn:
         # Sentry is not configured
@@ -39,14 +41,14 @@ def init_sentry() -> bool:
 
     try:
         # Parse configuration from environment variables
-        traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
+        traces_sample_rate = env_float("SENTRY_TRACES_SAMPLE_RATE", 1.0)
         send_default_pii = env_bool("SENTRY_SEND_DEFAULT_PII", default=True)
-        environment: str | None = os.getenv("SENTRY_ENVIRONMENT")
-        release: str | None = os.getenv("SENTRY_RELEASE")
-        profile_session_sample_rate = float(
-            os.getenv("SENTRY_PROFILE_SESSION_SAMPLE_RATE", "1.0")
+        environment = env_str("SENTRY_ENVIRONMENT")
+        release = env_str("SENTRY_RELEASE")
+        profile_session_sample_rate = env_float(
+            "SENTRY_PROFILE_SESSION_SAMPLE_RATE", 1.0
         )
-        profile_lifecycle_str = os.getenv("SENTRY_PROFILE_LIFECYCLE", "trace")
+        profile_lifecycle_str = env_str("SENTRY_PROFILE_LIFECYCLE", "trace")
         # Ensure profile_lifecycle is a valid literal value
         profile_lifecycle: str = (
             "manual" if profile_lifecycle_str == "manual" else "trace"

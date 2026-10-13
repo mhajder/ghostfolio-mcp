@@ -163,3 +163,15 @@ def test_unknown_oidc_bool_setting_is_rejected(monkeypatch, name):
     monkeypatch.setenv(name, "yep")
     with pytest.raises(ValueError, match=f"{name} must be one of"):
         get_transport_config_from_env()
+
+
+@pytest.mark.parametrize("value", ["", "   "])
+def test_blank_bearer_token_counts_as_unset(monkeypatch, value):
+    """A whitespace-only token must not become the token clients have to send."""
+    monkeypatch.setenv("MCP_HTTP_BEARER_TOKEN", value)
+    assert get_transport_config_from_env().http_bearer_token is None
+
+
+def test_bearer_token_is_stripped(monkeypatch):
+    monkeypatch.setenv("MCP_HTTP_BEARER_TOKEN", "  s3cret  ")
+    assert get_transport_config_from_env().http_bearer_token == "s3cret"  # noqa: S105

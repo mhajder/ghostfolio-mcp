@@ -41,3 +41,24 @@ def test_unknown_bool_setting_stops_startup(monkeypatch, name):
     monkeypatch.setenv(name, "enabled")
     with pytest.raises(ValueError, match=f"{name} must be one of"):
         get_ghostfolio_config_from_env()
+
+
+@pytest.mark.parametrize("value", ["", "   "])
+def test_blank_timeout_uses_the_default(monkeypatch, value):
+    monkeypatch.setenv("GHOSTFOLIO_TIMEOUT", value)
+    assert get_ghostfolio_config_from_env().timeout == 30
+
+
+def test_non_integer_timeout_names_the_variable(monkeypatch):
+    monkeypatch.setenv("GHOSTFOLIO_TIMEOUT", "30s")
+    with pytest.raises(ValueError, match="GHOSTFOLIO_TIMEOUT must be an integer"):
+        get_ghostfolio_config_from_env()
+
+
+def test_url_and_token_are_stripped_and_blank_counts_as_missing(monkeypatch):
+    monkeypatch.setenv("GHOSTFOLIO_URL", "  https://ghostfolio.invalid  ")
+    monkeypatch.setenv("GHOSTFOLIO_TOKEN", "   ")
+    config = get_ghostfolio_config_from_env()
+    assert config.ghostfolio_url == "https://ghostfolio.invalid"
+    # Empty, so main() reports the token as missing instead of sending spaces.
+    assert config.token == ""

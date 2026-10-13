@@ -10,6 +10,8 @@ import httpx2
 from ghostfolio_mcp.models import GhostfolioConfig
 from ghostfolio_mcp.models import TransportConfig
 from ghostfolio_mcp.utils import env_bool
+from ghostfolio_mcp.utils import env_int
+from ghostfolio_mcp.utils import env_str
 from ghostfolio_mcp.utils import http_host_from_env
 from ghostfolio_mcp.utils import http_port_from_env
 from ghostfolio_mcp.utils import quote_path_segment
@@ -240,41 +242,31 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         }
 
     return GhostfolioConfig(
-        ghostfolio_url=os.getenv("GHOSTFOLIO_URL", ""),
-        token=os.getenv("GHOSTFOLIO_TOKEN", ""),
+        ghostfolio_url=env_str("GHOSTFOLIO_URL") or "",
+        token=env_str("GHOSTFOLIO_TOKEN") or "",
         verify_ssl=env_bool("GHOSTFOLIO_VERIFY_SSL", default=True),
-        timeout=int(os.getenv("GHOSTFOLIO_TIMEOUT", "30")),
+        timeout=env_int("GHOSTFOLIO_TIMEOUT", 30),
         read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
         rate_limit_enabled=env_bool("RATE_LIMIT_ENABLED", default=False),
-        rate_limit_max_requests=int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "60")),
-        rate_limit_window_minutes=int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1")),
+        rate_limit_max_requests=env_int("RATE_LIMIT_MAX_REQUESTS", 60),
+        rate_limit_window_minutes=env_int("RATE_LIMIT_WINDOW_MINUTES", 1),
         tool_search_enabled=env_bool("TOOL_SEARCH_ENABLED", default=False),
         tool_search_strategy=(
             "regex"
             if os.getenv("TOOL_SEARCH_STRATEGY", "bm25").lower() == "regex"
             else "bm25"
         ),
-        tool_search_max_results=int(os.getenv("TOOL_SEARCH_MAX_RESULTS", "5")),
+        tool_search_max_results=env_int("TOOL_SEARCH_MAX_RESULTS", 5),
     )
 
 
 def get_transport_config_from_env() -> TransportConfig:
     """Get transport configuration from environment variables."""
-    http_bearer_token = os.getenv("MCP_HTTP_BEARER_TOKEN")
-    if http_bearer_token is not None:
-        http_bearer_token = http_bearer_token.strip() or None
-
-    def _clean(name: str) -> str | None:
-        """Read an env var, treating a blank value as unset."""
-        value = os.getenv(name)
-        if value is None:
-            return None
-        return value.strip() or None
 
     def _csv(name: str) -> list[str] | None:
         """Read a comma-separated env var, treating a blank value as unset."""
-        raw = _clean(name)
+        raw = env_str(name)
         if raw is None:
             return None
         return [item.strip() for item in raw.split(",") if item.strip()] or None
@@ -283,12 +275,12 @@ def get_transport_config_from_env() -> TransportConfig:
         transport_type=transport_from_env(),
         http_host=http_host_from_env(),
         http_port=http_port_from_env(),
-        http_bearer_token=http_bearer_token,
-        oidc_config_url=_clean("OIDC_CONFIG_URL"),
-        oidc_client_id=_clean("OIDC_CLIENT_ID"),
-        oidc_client_secret=_clean("OIDC_CLIENT_SECRET"),
-        oidc_base_url=_clean("OIDC_BASE_URL"),
-        oidc_redirect_path=_clean("OIDC_REDIRECT_PATH") or "/auth/callback",
+        http_bearer_token=env_str("MCP_HTTP_BEARER_TOKEN"),
+        oidc_config_url=env_str("OIDC_CONFIG_URL"),
+        oidc_client_id=env_str("OIDC_CLIENT_ID"),
+        oidc_client_secret=env_str("OIDC_CLIENT_SECRET"),
+        oidc_base_url=env_str("OIDC_BASE_URL"),
+        oidc_redirect_path=env_str("OIDC_REDIRECT_PATH") or "/auth/callback",
         oidc_required_scopes=_csv("OIDC_REQUIRED_SCOPES"),
         oidc_allowed_redirect_uris=_csv("OIDC_ALLOWED_REDIRECT_URIS"),
         oidc_verify_id_token=env_bool("OIDC_VERIFY_ID_TOKEN", default=False),
