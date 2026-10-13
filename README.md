@@ -161,7 +161,7 @@ LOG_LEVEL=INFO
 # Rate Limiting (requests per minute)
 # Set RATE_LIMIT_ENABLED true to enable rate limiting
 RATE_LIMIT_ENABLED=false
-RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_MAX_REQUESTS=60
 RATE_LIMIT_WINDOW_MINUTES=1
 
 # Tool Search Transform (Optional)
@@ -389,7 +389,7 @@ Enable rate limiting by setting the following environment variables in your `.en
 
 ```env
 RATE_LIMIT_ENABLED=true
-RATE_LIMIT_MAX_REQUESTS=100   # Maximum requests allowed per window
+RATE_LIMIT_MAX_REQUESTS=60    # Maximum requests allowed per window
 RATE_LIMIT_WINDOW_MINUTES=1   # Window size in minutes
 ```
 
