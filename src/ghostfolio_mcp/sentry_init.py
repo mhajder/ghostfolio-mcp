@@ -81,7 +81,7 @@ def init_sentry() -> bool:
         )
 
         logger.info(
-            f"Sentry monitoring enabled"
+            f"Sentry monitoring enabled "
             f"(traces_sample_rate={traces_sample_rate}, "
             f"environment={environment or 'default'})"
         )
