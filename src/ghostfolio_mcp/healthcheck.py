@@ -18,9 +18,7 @@ from ghostfolio_mcp.utils import http_host_from_env
 from ghostfolio_mcp.utils import http_port_from_env
 from ghostfolio_mcp.utils import transport_from_env
 
-# Wildcard binds listen on every interface, loopback included. A blank host
-# makes uvicorn listen on all interfaces, IPv4 and IPv6.
-ALL_INTERFACES = ""
+# Wildcard binds listen on every interface, loopback included.
 IPV4_WILDCARD = "0.0.0.0"  # noqa: S104
 IPV6_WILDCARD = "::"
 
@@ -32,12 +30,12 @@ def probe_hosts() -> list[str]:
     """Return the addresses to probe for MCP_HTTP_HOST, in order.
 
     A '::' bind is usually dual-stack, and containers often have no IPv6 on
-    loopback, so it is probed on both ::1 and 127.0.0.1, as is a blank host.
+    loopback, so it is probed on both ::1 and 127.0.0.1.
     """
     host = http_host_from_env()
     if host == IPV4_WILDCARD:
         return ["127.0.0.1"]
-    if host in (IPV6_WILDCARD, ALL_INTERFACES):
+    if host == IPV6_WILDCARD:
         return ["::1", "127.0.0.1"]
     return [host]
 

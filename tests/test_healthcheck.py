@@ -130,8 +130,8 @@ def test_unset_transport_means_stdio(monkeypatch, closed_port):
         ("0.0.0.0", ["127.0.0.1"]),  # noqa: S104
         # A '::' bind is usually dual-stack; containers often lack IPv6 loopback.
         ("::", ["::1", "127.0.0.1"]),
-        # uvicorn listens on every interface for a blank host.
-        ("", ["::1", "127.0.0.1"]),
+        # Blank counts as unset, so the server binds loopback.
+        ("", ["127.0.0.1"]),
         ("127.0.0.1", ["127.0.0.1"]),
         ("172.18.0.5", ["172.18.0.5"]),
         ("[fd00::5]", ["fd00::5"]),
