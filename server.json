@@ -216,7 +216,7 @@
         },
         {
           "name": "MCP_TRANSPORT",
-          "description": "MCP transport type (http for HTTP, stdio for stdio)",
+          "description": "MCP transport type: stdio, sse, or http (alias: streamable-http)",
           "value": "http",
           "isRequired": false,
           "isSecret": false

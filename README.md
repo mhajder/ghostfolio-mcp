@@ -181,6 +181,7 @@ TOOL_SEARCH_MAX_RESULTS=5
 
 # MCP Transport Configuration
 # Transport type: 'stdio' (default), 'sse' (Server-Sent Events), or 'http' (HTTP Streamable)
+# 'streamable-http' is accepted as an alias for 'http'.
 MCP_TRANSPORT=stdio
 
 # HTTP Transport Settings (used when MCP_TRANSPORT=sse or MCP_TRANSPORT=http)

@@ -87,7 +87,7 @@ def _configure(monkeypatch, port: int, transport: str = "http") -> None:
     monkeypatch.delenv("MCP_HTTP_HOST", raising=False)
 
 
-@pytest.mark.parametrize("transport", ["http", "HTTP", "sse", "SSE"])
+@pytest.mark.parametrize("transport", ["http", "HTTP", "sse", "SSE", "streamable-http"])
 def test_http_transports_are_probed(monkeypatch, closed_port, transport):
     _configure(monkeypatch, closed_port, transport)
     assert healthcheck.main() == 1
@@ -111,7 +111,7 @@ def test_open_port_that_never_answers_is_unhealthy(monkeypatch, hung_port):
 
 # The server runs stdio for anything but "sse" and "http", so there is no
 # port to probe for these.
-@pytest.mark.parametrize("transport", ["stdio", "", " http ", "streamable-http"])
+@pytest.mark.parametrize("transport", ["stdio", "", " http "])
 def test_stdio_has_nothing_to_probe(monkeypatch, closed_port, transport):
     _configure(monkeypatch, closed_port, transport)
     assert healthcheck.main() == 0
