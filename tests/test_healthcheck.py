@@ -111,8 +111,8 @@ def test_open_port_that_never_answers_is_unhealthy(monkeypatch, hung_port):
     assert healthcheck.main() == 1
 
 
-# The server runs stdio for anything but "sse" and "http", so there is no
-# port to probe for these.
+# stdio has no port to probe, and main() stops on any unknown value, so the
+# probe skips everything but the HTTP transports.
 @pytest.mark.parametrize("transport", ["stdio", "", "  ", "websocket"])
 def test_stdio_has_nothing_to_probe(monkeypatch, closed_port, transport):
     _configure(monkeypatch, closed_port, transport)
@@ -309,3 +309,29 @@ def test_real_server_health_endpoint_needs_no_credentials(
         time.sleep(0.05)
     # The MCP endpoint itself is protected, so auth is really enabled.
     assert _post_mcp(port) == 401
+
+
+def test_unknown_transport_stops_the_server(tmp_path):
+    """A typo must stop the server, not run stdio behind a closed port.
+
+    The healthcheck skips non-HTTP transports, so a silent stdio fallback would
+    also keep the container reported healthy.
+    """
+    env = {
+        **os.environ,
+        "GHOSTFOLIO_URL": "https://ghostfolio.invalid",
+        "GHOSTFOLIO_TOKEN": "t",
+        "MCP_TRANSPORT": "websocket",
+        "SENTRY_DSN": "",
+    }
+    proc = subprocess.run(
+        [sys.executable, "-c", "import ghostfolio_mcp.server as s; s.main()"],
+        env=env,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert proc.returncode == 1
+    assert "Unknown MCP_TRANSPORT 'websocket'" in proc.stderr

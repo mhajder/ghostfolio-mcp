@@ -62,7 +62,7 @@ def main() -> int:
     # transport configured only there is probed too.
     load_dotenv()
     if transport_from_env() not in HTTP_TRANSPORTS:
-        # Any other value runs the stdio transport, which has no port to probe.
+        # stdio has no port to probe, and main() stops on any unknown value.
         return 0
     port = http_port_from_env()
     return 0 if any(probe(host, port) for host in probe_hosts()) else 1
