@@ -9,52 +9,13 @@ returned success for it.
 
 import httpx2
 import pytest
-from fastmcp import FastMCP
 
-from ghostfolio_mcp import ghostfolio_client as client_module
-from ghostfolio_mcp.ghostfolio_client import GhostfolioClient
-from ghostfolio_mcp.models import GhostfolioConfig
-from ghostfolio_mcp.tools import register_tools
-
-BASE_URL = "https://ghostfolio.test:3333"
-AUTH_PATH = "/api/v1/auth/anonymous/"
+from tests.helpers import call
 
 
-@pytest.fixture
-def tools():
-    """A FastMCP server whose Ghostfolio client records every request path."""
-    config = GhostfolioConfig(ghostfolio_url=BASE_URL, token="api-token")
-
-    mcp = FastMCP(name="test")
-    register_tools(mcp, config)
-
-    paths: list[str] = []
-
-    def handler(request: httpx2.Request) -> httpx2.Response:
-        if request.url.path == AUTH_PATH:
-            return httpx2.Response(200, json={"authToken": "jwt"})
-        paths.append(request.url.raw_path.decode())
-        return httpx2.Response(200, json={})
-
-    # The client is a singleton twice over - a class attribute and a module
-    # global - so reset both to give each test its own transport.
-    GhostfolioClient._instance = None
-    client_module._ghostfolio_client_singleton = None
-    client = client_module.get_ghostfolio_client(config)
-    client.client = httpx2.AsyncClient(
-        base_url=client.base_url, transport=httpx2.MockTransport(handler)
-    )
-
-    yield mcp, paths
-
-    GhostfolioClient._instance = None
-    client_module._ghostfolio_client_singleton = None
-
-
-async def call(mcp: FastMCP, name: str, arguments: dict) -> None:
-    tool = await mcp.get_tool(name)
-    assert tool is not None, f"tool {name!r} is not registered"
-    await tool.run(arguments)
+def raw_paths(requests: list[httpx2.Request]) -> list[str]:
+    """The undecoded path of each request, as it went over the wire."""
+    return [request.url.raw_path.decode() for request in requests]
 
 
 @pytest.mark.asyncio
@@ -147,15 +108,15 @@ async def call(mcp: FastMCP, name: str, arguments: dict) -> None:
         ),
     ],
 )
-async def test_path_segments_are_encoded(tools, name, arguments, expected):
-    mcp, paths = tools
+async def test_path_segments_are_encoded(recorder, name, arguments, expected):
+    mcp, requests, _responses = recorder
     await call(mcp, name, arguments)
-    assert paths == [expected]
+    assert raw_paths(requests) == [expected]
 
 
 @pytest.mark.asyncio
-async def test_upsert_asset_profile_encodes_both_requests(tools):
-    mcp, paths = tools
+async def test_upsert_asset_profile_encodes_both_requests(recorder):
+    mcp, requests, _responses = recorder
     await call(
         mcp,
         "upsert_asset_profile",
@@ -168,37 +129,63 @@ async def test_upsert_asset_profile_encodes_both_requests(tools):
         },
     )
     # POST then PATCH, both against the encoded symbol.
-    assert paths == [
+    assert raw_paths(requests) == [
         "/api/v1/admin/profile-data/MANUAL/A%23B",
         "/api/v1/admin/profile-data/MANUAL/A%23B",
     ]
 
 
 @pytest.mark.asyncio
-async def test_update_account_encodes_both_requests(tools):
-    mcp, paths = tools
+async def test_update_account_encodes_both_requests(recorder):
+    mcp, requests, _responses = recorder
     await call(mcp, "update_account", {"account_id": "a#b", "name": "renamed"})
     # GET to backfill required fields, then PUT, both against the encoded id.
-    assert paths == [
+    assert raw_paths(requests) == [
         "/api/v1/account/a%23b/",
         "/api/v1/account/a%23b",
     ]
 
 
 @pytest.mark.asyncio
-async def test_dot_segment_cannot_walk_up_the_path(tools):
-    mcp, paths = tools
-    await call(mcp, "delete_asset_profile", {"data_source": "MANUAL", "symbol": ".."})
-    # Unescaped this would normalise to /api/v1/admin/profile-data, deleting
-    # against the collection instead of the symbol.
-    assert paths == ["/api/v1/admin/profile-data/MANUAL/%2E%2E"]
+async def test_update_activity_encodes_both_requests(recorder):
+    mcp, requests, _responses = recorder
+    await call(
+        mcp,
+        "update_activity",
+        {
+            "activity_id": "a#b",
+            "type": "BUY",
+            "symbol": "AAPL",
+            "date": "2026-04-30T00:00:00.000Z",
+            "quantity": 1.0,
+            "unit_price": 1.0,
+            "currency": "USD",
+            "data_source": "YAHOO",
+            "fee": 0.0,
+            "comment": "",
+        },
+    )
+    # GET to backfill required fields, then PUT, both against the encoded id.
+    assert raw_paths(requests) == [
+        "/api/v1/activities/a%23b/",
+        "/api/v1/activities/a%23b",
+    ]
 
 
 @pytest.mark.asyncio
-async def test_empty_id_does_not_reach_the_collection_endpoint(tools):
-    mcp, paths = tools
+async def test_dot_segment_cannot_walk_up_the_path(recorder):
+    mcp, requests, _responses = recorder
+    await call(mcp, "delete_asset_profile", {"data_source": "MANUAL", "symbol": ".."})
+    # Unescaped this would normalise to /api/v1/admin/profile-data, deleting
+    # against the collection instead of the symbol.
+    assert raw_paths(requests) == ["/api/v1/admin/profile-data/MANUAL/%2E%2E"]
+
+
+@pytest.mark.asyncio
+async def test_empty_id_does_not_reach_the_collection_endpoint(recorder):
+    mcp, requests, _responses = recorder
     # DELETE /api/v1/activities (no id) deletes every activity, so an empty id
     # has to fail before the request is built.
     with pytest.raises(Exception, match="must not be empty"):
         await call(mcp, "delete_activity", {"activity_id": ""})
-    assert paths == []
+    assert raw_paths(requests) == []

@@ -301,7 +301,8 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 - `get_investments`: Get investment data grouped by time period showing cash flows and contributions
 - `get_dividends`: Get dividend data grouped by time period showing dividend payments and yield
 - `get_orders`: Get all activities/orders from your portfolio, optionally filtered by account
-- `create_activity`: Create a single new transaction/activity in your portfolio (BUY, SELL, DIVIDEND, INTEREST, FEE, etc.)
+- `create_activity`: Create a single new transaction/activity in your portfolio (BUY, SELL, DIVIDEND, INTEREST, FEE, etc.), optionally with tags
+- `update_activity`: Update an existing activity/transaction, including its tags; fields you don't pass keep their current values
 - `delete_activity`: Delete a single activity/transaction by its ID (destructive operation)
 
 ### Benchmark Tools
@@ -376,7 +377,7 @@ Available tags include:
 - `asset` - Asset profile tools
 - `user` - User information tools
 - `system` - System health and platform information tools
-- `activities` - Activity/transaction management tools (create, delete activities)
+- `activities` - Activity/transaction management tools (create, update, delete activities)
 - `watchlist` - Watchlist management tools
 - `exchange-rate` - Currency exchange rate tools
 - `export` - Data export tools

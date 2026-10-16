@@ -82,7 +82,7 @@ mcp = FastMCP(
         "Available Capabilities:\n"
         "1. Accounts & Cash: Retrieve, create, update, and delete accounts. You can transfer cash balances between accounts "
         "and manage entries in an account's balance history directly (the series that drives its cash figure elsewhere).\n"
-        "2. Activities & Transactions: Add, retrieve, and delete activities (e.g. BUY, SELL, DIVIDEND, INTEREST, FEE, LIABILITY).\n"
+        "2. Activities & Transactions: Add, retrieve, update, and delete activities (e.g. BUY, SELL, DIVIDEND, INTEREST, FEE, LIABILITY).\n"
         "3. Watchlist: Manage symbols tracked by the user on their watchlist.\n"
         "4. Portfolio Analytics: Access details, allocations, holdings, performance charts, and benchmark comparisons.\n"
         "5. Market Data & Symbols: Look up ticker symbols across data sources (YAHOO, COINGECKO, MANUAL) and get historical prices. "

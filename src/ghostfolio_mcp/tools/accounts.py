@@ -199,7 +199,7 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         tags={"account", "update"},
         annotations={
             "readOnlyHint": False,
-            "destructiveHint": False,
+            "destructiveHint": True,
             "idempotentHint": True,
         },
     )

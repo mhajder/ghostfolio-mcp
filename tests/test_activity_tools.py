@@ -10,57 +10,31 @@ import json
 
 import httpx2
 import pytest
-from fastmcp import FastMCP
 
-from ghostfolio_mcp import ghostfolio_client as client_module
-from ghostfolio_mcp.ghostfolio_client import GhostfolioClient
-from ghostfolio_mcp.models import GhostfolioConfig
-from ghostfolio_mcp.tools import register_tools
-
-BASE_URL = "https://ghostfolio.test:3333"
-AUTH_PATH = "/api/v1/auth/anonymous/"
+from tests.helpers import call
 
 
-@pytest.fixture
-def recorder():
-    """A FastMCP server whose Ghostfolio client records every non-auth request.
-
-    `responses` is consumed in call order for whatever the test needs the
-    upstream API to return; any request beyond that gets a bare 200 `{}`.
-    """
-    config = GhostfolioConfig(ghostfolio_url=BASE_URL, token="api-token")
-
-    mcp = FastMCP(name="test")
-    register_tools(mcp, config)
-
-    requests: list[httpx2.Request] = []
-    responses: list[httpx2.Response] = []
-
-    def handler(request: httpx2.Request) -> httpx2.Response:
-        if request.url.path == AUTH_PATH:
-            return httpx2.Response(200, json={"authToken": "jwt"})
-        requests.append(request)
-        return responses.pop(0) if responses else httpx2.Response(200, json={})
-
-    # The client is a singleton twice over - a class attribute and a module
-    # global - so reset both to give each test its own transport.
-    GhostfolioClient._instance = None
-    client_module._ghostfolio_client_singleton = None
-    client = client_module.get_ghostfolio_client(config)
-    client.client = httpx2.AsyncClient(
-        base_url=client.base_url, transport=httpx2.MockTransport(handler)
-    )
-
-    yield mcp, requests, responses
-
-    GhostfolioClient._instance = None
-    client_module._ghostfolio_client_singleton = None
-
-
-async def call(mcp: FastMCP, name: str, arguments: dict):
-    tool = await mcp.get_tool(name)
-    assert tool is not None, f"tool {name!r} is not registered"
-    return await tool.run(arguments)
+def current_activity(**overrides) -> dict:
+    """An activity as GET /activities/:id returns it, with `overrides` applied."""
+    activity = {
+        "id": "act-1",
+        "type": "BUY",
+        "date": "2026-09-28T00:00:00.000Z",
+        "quantity": 0.249,
+        "unitPrice": 708.94,
+        "currency": "USD",
+        "fee": 0.0,
+        "comment": "monthly buy",
+        "accountId": "acc-1",
+        "assetProfile": {
+            "symbol": "VFIAX",
+            "dataSource": "YAHOO",
+            "currency": "USD",
+        },
+        "tags": [],
+    }
+    activity.update(overrides)
+    return activity
 
 
 @pytest.mark.asyncio
@@ -115,24 +89,18 @@ async def test_update_activity_backfills_required_fields_from_current_activity(
     recorder,
 ):
     mcp, requests, responses = recorder
+    # Covers the fallback to a `SymbolProfile` key when `assetProfile` is absent.
     responses.append(
         httpx2.Response(
             200,
-            json={
-                "id": "act-1",
-                "type": "BUY",
-                "date": "2026-09-28T00:00:00.000Z",
-                "quantity": 0.249,
-                "unitPrice": 708.94,
-                "currency": "USD",
-                "fee": 0.0,
-                "comment": None,
-                "accountId": "acc-1",
-                "SymbolProfile": {"symbol": "VFIAX", "dataSource": "YAHOO"},
-                "tags": [
+            json=current_activity(
+                comment=None,
+                assetProfile=None,
+                SymbolProfile={"symbol": "VFIAX", "dataSource": "YAHOO"},
+                tags=[
                     {"id": "a1bbe3e0-628b-4cdf-bf7c-78e0fe3a0b17", "name": "Retirement"}
                 ],
-            },
+            ),
         )
     )
 
@@ -166,19 +134,7 @@ async def test_update_activity_overrides_tags_take_precedence_over_current_tags(
     mcp, requests, responses = recorder
     responses.append(
         httpx2.Response(
-            200,
-            json={
-                "id": "act-1",
-                "type": "BUY",
-                "date": "2026-09-28T00:00:00.000Z",
-                "quantity": 0.249,
-                "unitPrice": 708.94,
-                "currency": "USD",
-                "fee": 0.0,
-                "accountId": "acc-1",
-                "SymbolProfile": {"symbol": "VFIAX", "dataSource": "YAHOO"},
-                "tags": [{"id": "old-tag", "name": "Old"}],
-            },
+            200, json=current_activity(tags=[{"id": "old-tag", "name": "Old"}])
         )
     )
 
@@ -197,19 +153,7 @@ async def test_update_activity_can_clear_tags_with_empty_list(recorder):
     mcp, requests, responses = recorder
     responses.append(
         httpx2.Response(
-            200,
-            json={
-                "id": "act-1",
-                "type": "BUY",
-                "date": "2026-09-28T00:00:00.000Z",
-                "quantity": 0.249,
-                "unitPrice": 708.94,
-                "currency": "USD",
-                "fee": 0.0,
-                "accountId": "acc-1",
-                "SymbolProfile": {"symbol": "VFIAX", "dataSource": "YAHOO"},
-                "tags": [{"id": "old-tag", "name": "Old"}],
-            },
+            200, json=current_activity(tags=[{"id": "old-tag", "name": "Old"}])
         )
     )
 
@@ -217,3 +161,214 @@ async def test_update_activity_can_clear_tags_with_empty_list(recorder):
 
     body = json.loads(requests[1].content)
     assert body["tags"] == []
+
+
+@pytest.mark.asyncio
+async def test_update_activity_falls_back_to_asset_profile_currency(recorder):
+    mcp, requests, responses = recorder
+    # Order.currency is nullable in Ghostfolio's schema.
+    responses.append(httpx2.Response(200, json=current_activity(currency=None)))
+
+    await call(mcp, "update_activity", {"activity_id": "act-1", "fee": 1.5})
+
+    body = json.loads(requests[1].content)
+    assert body["currency"] == "USD"
+
+
+@pytest.mark.asyncio
+async def test_update_activity_reports_fields_it_cannot_backfill(recorder):
+    mcp, requests, responses = recorder
+    # A restricted view redacts quantity, fee and comment to null.
+    responses.append(
+        httpx2.Response(
+            200, json=current_activity(quantity=None, fee=None, comment=None)
+        )
+    )
+
+    with pytest.raises(Exception, match="Could not backfill quantity, fee, comment "):
+        await call(mcp, "update_activity", {"activity_id": "act-1", "tags": []})
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.asyncio
+async def test_update_activity_uses_explicit_values_for_redacted_fields(recorder):
+    mcp, requests, responses = recorder
+    responses.append(
+        httpx2.Response(
+            200, json=current_activity(quantity=None, fee=None, comment=None)
+        )
+    )
+
+    await call(
+        mcp,
+        "update_activity",
+        {"activity_id": "act-1", "quantity": 2.0, "fee": 0.0, "comment": "kept"},
+    )
+
+    body = json.loads(requests[1].content)
+    assert body["quantity"] == 2.0
+    assert body["fee"] == 0.0
+    assert body["comment"] == "kept"
+
+
+@pytest.mark.asyncio
+async def test_update_activity_requires_comment_when_it_is_redacted(recorder):
+    mcp, requests, responses = recorder
+    responses.append(
+        httpx2.Response(
+            200, json=current_activity(quantity=None, fee=None, comment=None)
+        )
+    )
+
+    # Ghostfolio clears the comment on any update that omits it, so going
+    # ahead with only quantity and fee would erase the hidden comment.
+    with pytest.raises(Exception, match="Could not backfill comment "):
+        await call(
+            mcp,
+            "update_activity",
+            {"activity_id": "act-1", "quantity": 2.0, "fee": 0.0},
+        )
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.asyncio
+async def test_update_activity_keeps_an_empty_comment_empty(recorder):
+    mcp, requests, responses = recorder
+    # A null comment next to a real quantity is genuinely empty, not redacted.
+    responses.append(httpx2.Response(200, json=current_activity(comment=None)))
+
+    await call(mcp, "update_activity", {"activity_id": "act-1", "fee": 1.5})
+
+    body = json.loads(requests[1].content)
+    assert "comment" not in body
+
+
+@pytest.mark.asyncio
+async def test_update_activity_without_asset_profile_reports_missing_fields(
+    recorder,
+):
+    mcp, requests, responses = recorder
+    responses.append(
+        httpx2.Response(
+            200,
+            json=current_activity(assetProfile=None, SymbolProfile=None, currency=None),
+        )
+    )
+
+    with pytest.raises(
+        Exception, match="Could not backfill symbol, currency, data_source"
+    ):
+        await call(mcp, "update_activity", {"activity_id": "act-1", "fee": 1.5})
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("arguments", "missing"),
+    [
+        ({"symbol": "AAPL"}, "data_source, currency"),
+        ({"symbol": "AAPL", "data_source": "YAHOO"}, "currency"),
+        # Same symbol on a different data source is a different asset too.
+        ({"data_source": "MANUAL"}, "symbol, currency"),
+    ],
+)
+async def test_update_activity_requires_the_whole_asset_when_it_changes(
+    recorder, arguments, missing
+):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json=current_activity()))
+
+    with pytest.raises(Exception, match=f"missing {missing} "):
+        await call(mcp, "update_activity", {"activity_id": "act-1", **arguments})
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.asyncio
+async def test_update_activity_accepts_unchanged_asset_fields_alone(
+    recorder,
+):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json=current_activity()))
+
+    await call(
+        mcp,
+        "update_activity",
+        {"activity_id": "act-1", "symbol": "VFIAX", "data_source": "YAHOO"},
+    )
+
+    body = json.loads(requests[1].content)
+    assert body["symbol"] == "VFIAX"
+    assert body["dataSource"] == "YAHOO"
+
+
+@pytest.mark.asyncio
+async def test_update_activity_matches_an_encoded_data_source(recorder):
+    mcp, requests, responses = recorder
+    # With ENABLE_FEATURE_SUBSCRIPTION Ghostfolio returns YAHOO as the first
+    # 8 hex digits of its SHA-256.
+    responses.append(
+        httpx2.Response(
+            200,
+            json=current_activity(
+                assetProfile={
+                    "symbol": "VFIAX",
+                    "dataSource": "4534c002",
+                    "currency": "USD",
+                }
+            ),
+        )
+    )
+
+    await call(
+        mcp,
+        "update_activity",
+        {"activity_id": "act-1", "data_source": "YAHOO", "fee": 1.5},
+    )
+
+    assert [request.method for request in requests] == ["GET", "PUT"]
+
+
+@pytest.mark.asyncio
+async def test_update_activity_changes_the_whole_asset(recorder):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json=current_activity()))
+
+    await call(
+        mcp,
+        "update_activity",
+        {
+            "activity_id": "act-1",
+            "symbol": "AAPL",
+            "data_source": "YAHOO",
+            "currency": "USD",
+        },
+    )
+
+    body = json.loads(requests[1].content)
+    assert body["symbol"] == "AAPL"
+    assert body["dataSource"] == "YAHOO"
+    assert body["currency"] == "USD"
+
+
+@pytest.mark.asyncio
+async def test_update_activity_keeps_current_account_by_default(recorder):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json=current_activity()))
+
+    await call(mcp, "update_activity", {"activity_id": "act-1", "fee": 1.5})
+
+    body = json.loads(requests[1].content)
+    assert body["accountId"] == "acc-1"
+    assert body["comment"] == "monthly buy"
+
+
+@pytest.mark.asyncio
+async def test_update_activity_detaches_account_with_empty_account_id(recorder):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json=current_activity()))
+
+    await call(mcp, "update_activity", {"activity_id": "act-1", "account_id": ""})
+
+    # Ghostfolio disconnects the account when accountId is absent.
+    body = json.loads(requests[1].content)
+    assert "accountId" not in body
