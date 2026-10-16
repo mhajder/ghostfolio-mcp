@@ -138,7 +138,11 @@ async def test_upsert_asset_profile_encodes_both_requests(recorder):
 @pytest.mark.asyncio
 async def test_update_account_encodes_both_requests(recorder):
     mcp, requests, _responses = recorder
-    await call(mcp, "update_account", {"account_id": "a#b", "name": "renamed"})
+    await call(
+        mcp,
+        "update_account",
+        {"account_id": "a#b", "name": "renamed", "currency": "USD"},
+    )
     # GET to backfill required fields, then PUT, both against the encoded id.
     assert raw_paths(requests) == [
         "/api/v1/account/a%23b/",

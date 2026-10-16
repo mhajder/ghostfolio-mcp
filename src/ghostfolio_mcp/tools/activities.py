@@ -8,6 +8,7 @@ from pydantic import Field
 
 from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_client
 from ghostfolio_mcp.models import GhostfolioConfig
+from ghostfolio_mcp.utils import merge_for_update
 from ghostfolio_mcp.utils import quote_path_segment
 
 logger = logging.getLogger(__name__)
@@ -316,7 +317,7 @@ def register_activities_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                         f"({current_asset})"
                     )
 
-            activity_data: dict[str, Any] = {
+            current_values = {
                 "id": activity_id,
                 "type": current.get("type"),
                 "symbol": asset_profile.get("symbol"),
@@ -347,29 +348,16 @@ def register_activities_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
                 "comment": comment,
                 "tags": tags,
             }
-            activity_data.update(
-                {key: value for key, value in overrides.items() if value is not None}
-            )
-
-            # Ghostfolio's UpdateOrderDto requires these on every request, so a
-            # missing one would only come back as an opaque 400.
-            missing = [
-                param
-                for key, param in _REQUIRED_UPDATE_FIELDS.items()
-                if activity_data[key] is None
-            ]
+            required = dict(_REQUIRED_UPDATE_FIELDS)
             # Order.quantity is never null in Ghostfolio's database, so a null
             # one means the GET was redacted, and the comment with it. Since
             # Ghostfolio clears the comment on any update that omits it, a
             # backfilled null would silently erase it.
-            if current.get("quantity") is None and comment is None:
-                missing.append("comment")
-            if missing:
-                raise ValueError(
-                    f"Could not backfill {', '.join(missing)} from activity "
-                    f"{activity_id!r} (Ghostfolio returned no value, e.g. because "
-                    "it is redacted in a restricted view); pass them explicitly"
-                )
+            if current.get("quantity") is None:
+                required["comment"] = "comment"
+            activity_data = merge_for_update(
+                current_values, overrides, required, f"activity {activity_id!r}"
+            )
 
             # Ghostfolio detaches the account when accountId is absent or
             # empty, so only send a real one. A null comment here is a

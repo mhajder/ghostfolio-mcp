@@ -79,6 +79,39 @@ async def test_update_account_overrides_take_precedence_over_current_values(reco
 
 
 @pytest.mark.asyncio
+async def test_update_account_reports_fields_it_cannot_backfill(recorder):
+    mcp, requests, _responses = recorder
+    # Ghostfolio answers GET /account/:id for an unknown id with an empty body.
+
+    with pytest.raises(Exception, match="Could not backfill name, currency "):
+        await call(mcp, "update_account", {"account_id": "acc-1", "comment": "x"})
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.asyncio
+async def test_update_account_keeps_a_missing_platform_as_none(recorder):
+    mcp, requests, responses = recorder
+    # platformId is nullable (an account without a platform), so a null one
+    # is sent back rather than reported as missing.
+    responses.append(
+        httpx2.Response(
+            200,
+            json={"id": "acc-1", "name": "Cash", "currency": "USD", "platformId": None},
+        )
+    )
+
+    await call(mcp, "update_account", {"account_id": "acc-1", "name": "Wallet"})
+
+    body = json.loads(requests[1].content)
+    assert body == {
+        "id": "acc-1",
+        "name": "Wallet",
+        "currency": "USD",
+        "platformId": None,
+    }
+
+
+@pytest.mark.asyncio
 async def test_create_account_balance_defaults_date_to_today(recorder):
     mcp, requests, _responses = recorder
 

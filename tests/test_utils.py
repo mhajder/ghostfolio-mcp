@@ -6,6 +6,7 @@ from ghostfolio_mcp.utils import env_int
 from ghostfolio_mcp.utils import env_str
 from ghostfolio_mcp.utils import http_host_from_env
 from ghostfolio_mcp.utils import http_port_from_env
+from ghostfolio_mcp.utils import merge_for_update
 from ghostfolio_mcp.utils import parse_bool
 from ghostfolio_mcp.utils import quote_path_segment
 from ghostfolio_mcp.utils import transport_from_env
@@ -210,3 +211,42 @@ def test_env_float_names_the_variable(monkeypatch):
     monkeypatch.setenv("GHOSTFOLIO_TEST_FLOAT", "half")
     with pytest.raises(ValueError, match="GHOSTFOLIO_TEST_FLOAT must be a number"):
         env_float("GHOSTFOLIO_TEST_FLOAT", 1.0)
+
+
+def test_merge_for_update_overrides_only_what_the_caller_passed():
+    merged = merge_for_update(
+        {"name": "Old", "currency": "USD", "comment": "kept"},
+        {"name": "New", "currency": None, "balance": 0.0},
+        {"name": "name", "currency": "currency"},
+        "account 'a'",
+    )
+    # None keeps the current value; falsy values like 0.0 still override.
+    assert merged == {
+        "name": "New",
+        "currency": "USD",
+        "comment": "kept",
+        "balance": 0.0,
+    }
+
+
+def test_merge_for_update_names_missing_fields_by_tool_parameter():
+    with pytest.raises(
+        ValueError,
+        match=r"Could not backfill unit_price, data_source from activity 'x'",
+    ):
+        merge_for_update(
+            {"unitPrice": None, "dataSource": None, "type": "BUY"},
+            {},
+            {"type": "type", "unitPrice": "unit_price", "dataSource": "data_source"},
+            "activity 'x'",
+        )
+
+
+def test_merge_for_update_accepts_an_override_for_a_missing_field():
+    merged = merge_for_update(
+        {"unitPrice": None},
+        {"unitPrice": 1.5},
+        {"unitPrice": "unit_price"},
+        "activity 'x'",
+    )
+    assert merged == {"unitPrice": 1.5}

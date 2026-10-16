@@ -1,5 +1,7 @@
 import os
 from collections.abc import Callable
+from collections.abc import Mapping
+from typing import Any
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -205,3 +207,46 @@ def quote_path_segment(value: str) -> str:
     if set(encoded) == {"."}:
         encoded = encoded.replace(".", "%2E")
     return encoded
+
+
+def merge_for_update(
+    current: Mapping[str, Any],
+    overrides: Mapping[str, Any],
+    required: Mapping[str, str],
+    resource: str,
+) -> dict[str, Any]:
+    """
+    Build the body for a Ghostfolio PUT that replaces the whole record.
+
+    Ghostfolio's update endpoints require every field of the record on each
+    request, so tools read the record first and send it back with the
+    caller's changes on top. `current` and `overrides` are both keyed by API
+    field; an override of None means "keep the current value".
+
+    A required field that is still None after the merge would only come back
+    from Ghostfolio as an opaque 400 (or be written as null), so this raises
+    instead, naming the tool parameters the caller has to pass.
+
+    Args:
+        current: The record's current values, keyed by API field.
+        overrides: The caller's arguments, keyed by API field.
+        required: Each API field the endpoint requires, mapped to the tool
+            parameter that supplies it.
+        resource: The record, for the error message (e.g. "account 'abc'").
+
+    Returns:
+        The merged request body.
+
+    Raises:
+        ValueError: If a required field has no value after the merge.
+    """
+    data = {**current}
+    data.update({key: value for key, value in overrides.items() if value is not None})
+    missing = [param for key, param in required.items() if data.get(key) is None]
+    if missing:
+        raise ValueError(
+            f"Could not backfill {', '.join(missing)} from {resource} (Ghostfolio "
+            "returned no value, e.g. because it is redacted in a restricted view "
+            "or the record does not exist); pass them explicitly"
+        )
+    return data

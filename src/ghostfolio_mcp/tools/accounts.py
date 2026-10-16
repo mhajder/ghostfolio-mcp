@@ -9,6 +9,7 @@ from pydantic import Field
 
 from ghostfolio_mcp.ghostfolio_client import get_ghostfolio_client
 from ghostfolio_mcp.models import GhostfolioConfig
+from ghostfolio_mcp.utils import merge_for_update
 from ghostfolio_mcp.utils import quote_path_segment
 
 logger = logging.getLogger(__name__)
@@ -245,7 +246,9 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         `name`, `currency` and `platform_id` are required on every request even
         when they are not changing. Any left unset here are backfilled from the
         account's current state with a GET before the PUT, so you only need to
-        pass the fields you actually want to change.
+        pass the fields you actually want to change. If `name` or `currency`
+        can't be backfilled (e.g. the account doesn't exist), the update stops
+        before the PUT and names them.
 
         Setting `balance` here applies it as *today's* entry in the account's
         balance history (the same series `get_account_balances` returns and
@@ -267,25 +270,28 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
         async with get_ghostfolio_client(config) as client:
             current = await client.get(f"account/{quote_path_segment(account_id)}")
 
-            # id, name, currency and platformId are required by Ghostfolio's
-            # UpdateAccountDto on every request; fields the caller didn't
-            # override are backfilled from the account's current values.
-            account_data: dict[str, Any] = {
-                "id": account_id,
-                "name": name if name is not None else current.get("name"),
-                "currency": (
-                    currency if currency is not None else current.get("currency")
-                ),
-                "platformId": (
-                    platform_id
-                    if platform_id is not None
-                    else current.get("platformId")
-                ),
-            }
-            if balance is not None:
-                account_data["balance"] = balance
-            if comment is not None:
-                account_data["comment"] = comment
+            # Ghostfolio's UpdateAccountDto requires id, name, currency and
+            # platformId on every request. platformId may be null (no
+            # platform), so only name and currency must come back non-null.
+            # comment, balance and tags are left untouched when omitted, so
+            # they are only sent when the caller passes them.
+            account_data = merge_for_update(
+                {
+                    "id": account_id,
+                    "name": current.get("name"),
+                    "currency": current.get("currency"),
+                    "platformId": current.get("platformId"),
+                },
+                {
+                    "name": name,
+                    "currency": currency,
+                    "platformId": platform_id,
+                    "balance": balance,
+                    "comment": comment,
+                },
+                {"name": "name", "currency": "currency"},
+                f"account {account_id!r}",
+            )
 
             return await client.put(
                 f"account/{quote_path_segment(account_id)}", data=account_data
