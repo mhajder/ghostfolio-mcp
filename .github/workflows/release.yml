@@ -21,8 +21,46 @@ jobs:
       - name: Get version from tag
         id: get_version
         run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes
+        env:
+          TAG: ${{ steps.get_version.outputs.tag_name }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+          IMAGE: ghcr.io/${{ github.repository }}
+        run: |
+          # Same tags as docker/metadata-action in publish.yml: pre-releases only get the full version
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            IMAGE_TAGS="\`$VERSION\`, \`${VERSION%.*}\`, \`${VERSION%%.*}\`"
+          else
+            IMAGE_TAGS="\`$VERSION\`"
+          fi
+          PKG_NAME=$(grep -m1 '^name' pyproject.toml | sed 's/.*= *"\(.*\)"/\1/')
+          CHANGELOG=$(awk -v heading="## $TAG " '
+            index($0, heading) == 1 { flag = 1; next }
+            /^## / { if (flag) exit }
+            flag && (started || NF) { started = 1; print }
+          ' CHANGELOG.md)
+          {
+            echo "## Release $TAG"
+            echo ""
+            echo "### 🐳 Docker Image"
+            echo ""
+            echo "| Image | Tags |"
+            echo "|-------|------|"
+            echo "| \`$IMAGE\` | $IMAGE_TAGS, \`sha-${GITHUB_SHA::7}\` |"
+            echo ""
+            echo "### 🐍 Python Package"
+            echo ""
+            echo "- **Package:** \`$PKG_NAME==$VERSION\`"
+            echo "- **Registry:** [PyPI](https://pypi.org/project/$PKG_NAME/$VERSION/)"
+            echo ""
+            echo "### 📋 Changelog"
+            echo ""
+            echo "${CHANGELOG:-No changelog entry found for this release.}"
+          } > release_notes.md
+          cat release_notes.md
 
       - name: Create Release
         id: create_release
@@ -30,9 +68,5 @@ jobs:
         with:
           tag_name: ${{ steps.get_version.outputs.tag_name }}
           name: ${{ steps.get_version.outputs.tag_name }}
-          generate_release_notes: true
-          append_body: true
-          body: |
-            ## Docker Image
-            - `ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.version }}`
+          body_path: release_notes.md
           prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-') }}
