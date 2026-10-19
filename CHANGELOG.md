@@ -1,3 +1,31 @@
+## v1.8.0 (2026-10-19)
+
+### Feat
+
+- **activities**: add tags support to create_activity and new update_activity tool (#89)
+- **transport**: accept streamable-http as an alias for http
+- add Python 3.15 support
+- **health**: serve /health and probe it from the Docker healthcheck
+- **docker**: drop the MCPO image
+
+### Fix
+
+- **accounts**: stop update_account from sending nulls for name and currency
+- **activities**: stop update_activity from writing wrong or missing values
+- **transport**: stop on an unknown MCP_TRANSPORT instead of running stdio
+- **sentry**: send no PII unless SENTRY_SEND_DEFAULT_PII asks for it
+- **transport**: ignore surrounding spaces in MCP_TRANSPORT
+- **transport**: bind loopback when MCP_HTTP_HOST is blank
+- **config**: validate settings of enabled features only
+- **config**: treat blank env values as unset
+- **config**: reject unrecognized boolean settings
+- **sentry**: log the enabled message by initialising after logging
+- **docker**: run as numeric UID 10001 with root-owned app files
+
+### Refactor
+
+- **server**: read config attributes directly
+
 ## v1.7.0 (2026-09-17)
 
 ### Feat
