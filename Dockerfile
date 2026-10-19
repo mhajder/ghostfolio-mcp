@@ -22,6 +22,8 @@ FROM python:3.15-alpine3.24
 LABEL org.opencontainers.image.title="Ghostfolio MCP Server" \
       org.opencontainers.image.description="MCP server for Ghostfolio management" \
       org.opencontainers.image.url="https://github.com/mhajder/ghostfolio-mcp" \
+      org.opencontainers.image.documentation="https://github.com/mhajder/ghostfolio-mcp#readme" \
+      org.opencontainers.image.authors="Mateusz Hajder" \
       org.opencontainers.image.source="https://github.com/mhajder/ghostfolio-mcp" \
       org.opencontainers.image.vendor="Mateusz Hajder" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later" \
