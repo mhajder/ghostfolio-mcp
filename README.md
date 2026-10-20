@@ -1,10 +1,26 @@
+<div align="center">
+
 # Ghostfolio MCP Server
+
+**Let AI agents analyze and manage your Ghostfolio investment portfolio**
+
+[![PyPI](https://img.shields.io/pypi/v/ghostfolio-mcp?logo=pypi&logoColor=white)](https://pypi.org/project/ghostfolio-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/ghostfolio-mcp?logo=python&logoColor=white)](https://pypi.org/project/ghostfolio-mcp/)
+[![License](https://img.shields.io/github/license/mhajder/ghostfolio-mcp)](https://github.com/mhajder/ghostfolio-mcp/blob/main/LICENSE)
+
+[![Pre-commit Checks](https://github.com/mhajder/ghostfolio-mcp/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/mhajder/ghostfolio-mcp/actions/workflows/pre-commit.yml)
+[![Docker](https://img.shields.io/badge/ghcr.io-ghostfolio--mcp-2496ED?logo=docker&logoColor=white)](https://github.com/mhajder/ghostfolio-mcp/pkgs/container/ghostfolio-mcp)
+[![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0.1%2Fservers%2Fio.github.mhajder%252Fghostfolio-mcp%2Fversions%2Flatest&query=%24.server.version&label=MCP%20Registry&color=6E56CF)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.mhajder%2Fghostfolio-mcp/versions/latest)
+
+[Installation](https://github.com/mhajder/ghostfolio-mcp#-installation) · [Tools](https://github.com/mhajder/ghostfolio-mcp#-available-tools) · [Configuration](https://github.com/mhajder/ghostfolio-mcp#-configuration) · [Security](https://github.com/mhajder/ghostfolio-mcp#-security--safety-features)
+
+</div>
 
 <!-- mcp-name: io.github.mhajder/ghostfolio-mcp -->
 
 Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server designed to provide advanced, programmable access to Ghostfolio portfolio management and financial data. It exposes a modern API for querying, analyzing, and managing your investment portfolio through Ghostfolio's comprehensive features. The server supports both read and write operations, robust security features, and is suitable for integration with automation tools, financial dashboards, and custom portfolio management applications.
 
-## Features
+## ✨ Features
 
 ### Core Features
 
@@ -35,7 +51,7 @@ Ghostfolio MCP Server is a Python-based Model Context Protocol (MCP) server desi
 - Optional tool-search transform for large tool catalogs
 - Bearer token or OIDC/OAuth authentication for HTTP transports
 
-## Installation
+## 🚀 Installation
 
 ### Prerequisites
 
@@ -128,7 +144,7 @@ uv run ty check .
 uv run prek install
 ```
 
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
 
@@ -278,7 +294,7 @@ When enabled, Sentry automatically captures:
 
 Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will run normally without any Sentry integration, and no monitoring data will be collected.
 
-## Available Tools
+## 🧰 Available Tools
 
 ### Account Management Tools
 
@@ -349,7 +365,7 @@ Sentry is completely optional. If you don't set `SENTRY_DSN`, the server will ru
 
 - `get_user_info`: Get user information and settings
 
-## Security & Safety Features
+## 🔒 Security & Safety Features
 
 ### Read-Only Mode
 
@@ -558,7 +574,7 @@ docker run -v ghostfolio-mcp-data:/data --env-file .env ghcr.io/mhajder/ghostfol
 
 `OIDC_BASE_URL` must be the externally reachable HTTPS URL, and the proxy must forward the `Host` header unchanged, otherwise the OAuth metadata this server advertises will point at the wrong host.
 
-## Data Sources
+## 📊 Data Sources
 
 Ghostfolio supports multiple data sources for market data and symbols:
 
@@ -569,7 +585,7 @@ Ghostfolio supports multiple data sources for market data and symbols:
 
 When using tools that require a data source parameter, specify the appropriate source for your asset type.
 
-## Using Docker
+## 🐳 Using Docker
 
 A Docker image is available on GitHub Packages for easy deployment. It runs the
 HTTP Streamable transport on port 8000 (`/mcp`).
@@ -594,16 +610,12 @@ takes precedence and the bearer token is not accepted. Use the URL
 WebUI registers itself as a client, so if you set `OIDC_ALLOWED_REDIRECT_URIS`,
 include your Open WebUI URL in it.
 
-## Contributing
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and ensure code quality (`uv run pytest && uv run ruff check .`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/mhajder/ghostfolio-mcp/blob/main/CONTRIBUTING.md) for the dev setup, checks and commit message format, and use the [issue templates](https://github.com/mhajder/ghostfolio-mcp/issues/new/choose) for bugs and feature requests.
 
-## License
+Found a security problem? Please report it privately as described in [SECURITY.md](https://github.com/mhajder/ghostfolio-mcp/blob/main/SECURITY.md).
 
-GNU Affero General Public License - see LICENSE file for details.
+## 📜 License
+
+GNU Affero General Public License v3.0 or later - see [LICENSE](https://github.com/mhajder/ghostfolio-mcp/blob/main/LICENSE) for details.
