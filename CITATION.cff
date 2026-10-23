@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/mhajder/ghostfolio-mcp"
 url: "https://pypi.org/project/ghostfolio-mcp/"
 license: AGPL-3.0-or-later
-version: 1.8.0
+version: 1.8.1
 keywords:
   - mcp
   - mcp-server
