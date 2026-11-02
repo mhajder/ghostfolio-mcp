@@ -187,3 +187,77 @@ async def test_failed_write_error_body_is_truncated_when_large(recorder):
         )
 
     assert len(str(exc_info.value)) < 3000
+
+
+@pytest.mark.asyncio
+async def test_get_accounts_lists_every_account(recorder):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json={"accounts": [{"id": "acc-1"}]}))
+
+    result = await call(mcp, "get_accounts", {})
+
+    assert [(r.method, r.url.path) for r in requests] == [("GET", "/api/v1/account/")]
+    assert result.structured_content == {"accounts": [{"id": "acc-1"}]}
+
+
+@pytest.mark.asyncio
+async def test_create_account_sends_defaults_for_optional_fields(recorder):
+    mcp, requests, _responses = recorder
+
+    await call(mcp, "create_account", {"name": "Broker", "currency": "EUR"})
+
+    [request] = requests
+    assert request.method == "POST"
+    assert request.url.path == "/api/v1/account"
+    assert json.loads(request.content) == {
+        "name": "Broker",
+        "currency": "EUR",
+        "balance": 0.0,
+        "comment": "",
+        "platformId": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_create_account_forwards_every_field(recorder):
+    mcp, requests, _responses = recorder
+
+    await call(
+        mcp,
+        "create_account",
+        {
+            "name": "Broker",
+            "currency": "USD",
+            "balance": 250.5,
+            "comment": "main",
+            "platform_id": "platform-1",
+        },
+    )
+
+    assert json.loads(requests[0].content) == {
+        "name": "Broker",
+        "currency": "USD",
+        "balance": 250.5,
+        "comment": "main",
+        "platformId": "platform-1",
+    }
+
+
+@pytest.mark.asyncio
+async def test_transfer_account_balance_posts_both_accounts_and_amount(recorder):
+    mcp, requests, _responses = recorder
+
+    await call(
+        mcp,
+        "transfer_account_balance",
+        {"account_id_from": "acc-1", "account_id_to": "acc-2", "balance": 75.0},
+    )
+
+    [request] = requests
+    assert request.method == "POST"
+    assert request.url.path == "/api/v1/account/transfer-balance"
+    assert json.loads(request.content) == {
+        "accountIdFrom": "acc-1",
+        "accountIdTo": "acc-2",
+        "balance": 75.0,
+    }

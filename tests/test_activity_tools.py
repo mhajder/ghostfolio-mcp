@@ -372,3 +372,23 @@ async def test_update_activity_detaches_account_with_empty_account_id(recorder):
     # Ghostfolio disconnects the account when accountId is absent.
     body = json.loads(requests[1].content)
     assert "accountId" not in body
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("arguments", "params"),
+    [({}, {}), ({"account_id": "acc-1"}, {"accounts": "acc-1"})],
+)
+async def test_get_orders_filters_by_account_only_when_given(
+    recorder, arguments, params
+):
+    mcp, requests, responses = recorder
+    responses.append(httpx2.Response(200, json={"activities": [], "count": 0}))
+
+    result = await call(mcp, "get_orders", arguments)
+
+    [request] = requests
+    assert request.method == "GET"
+    assert request.url.path == "/api/v1/activities/"
+    assert dict(request.url.params) == params
+    assert result.structured_content == {"activities": [], "count": 0}

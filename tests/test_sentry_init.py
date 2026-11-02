@@ -41,3 +41,45 @@ def test_sentry_pii_can_still_be_opted_into(fake_sentry, monkeypatch):
     monkeypatch.setenv("SENTRY_SEND_DEFAULT_PII", "true")
     sentry_init.init_sentry()
     assert fake_sentry.call_args.kwargs["send_default_pii"] is True
+
+
+def test_missing_sentry_sdk_warns_and_stays_off(monkeypatch, caplog):
+    monkeypatch.setenv("SENTRY_DSN", "https://key@example.invalid/1")
+    # A None entry makes the import raise ImportError.
+    with patch.dict(sys.modules, {"sentry_sdk": None}):
+        assert sentry_init.init_sentry() is False
+    assert "Sentry SDK not installed" in caplog.text
+
+
+def test_explicit_release_is_used(fake_sentry, monkeypatch):
+    monkeypatch.setenv("SENTRY_RELEASE", "1.2.3")
+    sentry_init.init_sentry()
+    assert fake_sentry.call_args.kwargs["release"] == "1.2.3"
+
+
+def test_release_defaults_to_the_installed_version(fake_sentry, monkeypatch):
+    import importlib.metadata
+
+    monkeypatch.delenv("SENTRY_RELEASE", raising=False)
+    sentry_init.init_sentry()
+    assert fake_sentry.call_args.kwargs["release"] == importlib.metadata.version(
+        "ghostfolio-mcp"
+    )
+
+
+def test_release_is_none_when_the_package_is_not_installed(fake_sentry, monkeypatch):
+    import importlib.metadata
+
+    def missing(_name):
+        raise importlib.metadata.PackageNotFoundError
+
+    monkeypatch.delenv("SENTRY_RELEASE", raising=False)
+    monkeypatch.setattr(importlib.metadata, "version", missing)
+    sentry_init.init_sentry()
+    assert fake_sentry.call_args.kwargs["release"] is None
+
+
+def test_init_failure_is_logged_not_raised(fake_sentry, caplog):
+    fake_sentry.side_effect = RuntimeError("bad dsn")
+    assert sentry_init.init_sentry() is False
+    assert "Failed to initialize Sentry: bad dsn" in caplog.text

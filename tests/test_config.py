@@ -131,3 +131,18 @@ def test_timeout_must_be_positive(monkeypatch, value):
     monkeypatch.setenv("GHOSTFOLIO_TIMEOUT", value)
     with pytest.raises(ValueError, match="timeout"):
         get_ghostfolio_config_from_env()
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("portfolio, symbol ,import", {"portfolio", "symbol", "import"}),
+        ("watchlist,,  ,watchlist", {"watchlist"}),
+        ("   ", set()),
+    ],
+)
+def test_disabled_tags_are_split_stripped_and_deduplicated(
+    monkeypatch, value, expected
+):
+    monkeypatch.setenv("GHOSTFOLIO_DISABLED_TAGS", value)
+    assert get_ghostfolio_config_from_env().disabled_tags == expected
