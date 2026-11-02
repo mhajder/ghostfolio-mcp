@@ -50,7 +50,7 @@ def register_accounts_tools(mcp: FastMCP, config: GhostfolioConfig) -> None:
             )
 
     @mcp.tool(
-        tags={"accounts", "read-only"},
+        tags={"account", "read-only"},
         annotations={
             "readOnlyHint": True,
             "destructiveHint": False,
