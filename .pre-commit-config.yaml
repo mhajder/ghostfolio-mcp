@@ -4,6 +4,8 @@ default_install_hook_types: [ pre-push, commit-msg, pre-commit ]
 exclude: |
   (?x)^(
     uv\.lock
+    | \.release-please-manifest\.json
+    | CHANGELOG\.md
   )$
 
 repos:

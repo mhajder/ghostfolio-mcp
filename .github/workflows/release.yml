@@ -4,9 +4,11 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   create-release:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,8 +38,9 @@ jobs:
             IMAGE_TAGS="\`$VERSION\`"
           fi
           PKG_NAME=$(grep -m1 '^name' pyproject.toml | sed 's/.*= *"\(.*\)"/\1/')
-          CHANGELOG=$(awk -v heading="## $TAG " '
-            index($0, heading) == 1 { flag = 1; next }
+          # cz bump wrote "## v1.2.3 (date)", release-please writes "## [1.2.3](compare-url) (date)"
+          CHANGELOG=$(awk -v heading="## $TAG " -v rp_heading="## [$VERSION](" '
+            index($0, heading) == 1 || index($0, rp_heading) == 1 { flag = 1; next }
             /^## / { if (flag) exit }
             flag && (started || NF) { started = 1; print }
           ' CHANGELOG.md)

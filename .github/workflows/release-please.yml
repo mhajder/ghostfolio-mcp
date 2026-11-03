@@ -1,0 +1,63 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  actions: write # Required to dispatch the release and publish workflows
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main
+
+      - name: Update OCI identifier in PR
+        if: steps.release.outputs.pr != null
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_JSON: ${{ steps.release.outputs.pr }}
+        run: |
+          BRANCH=$(jq -r '.headBranchName' <<< "$PR_JSON")
+          FILE=$(gh api "repos/$GITHUB_REPOSITORY/contents/server.json?ref=$BRANCH")
+          CURRENT=$(jq -r '.content' <<< "$FILE" | base64 -d)
+          VERSION=$(jq -r '.version' <<< "$CURRENT")
+          IMAGE="ghcr.io/$GITHUB_REPOSITORY:$VERSION"
+          if [ "$(jq -r '.packages[] | select(.registryType == "oci") | .identifier' <<< "$CURRENT")" = "$IMAGE" ]; then
+            echo "OCI identifier already points at $VERSION"
+            exit 0
+          fi
+          UPDATED=$(jq --indent 2 --arg image "$IMAGE" \
+            '(.packages[] | select(.registryType == "oci") | .identifier) = $image' <<< "$CURRENT")
+          gh api "repos/$GITHUB_REPOSITORY/contents/server.json" -X PUT \
+            -f message="chore: update OCI identifier to $VERSION" \
+            -f content="$(base64 -w 0 <<< "$UPDATED")" \
+            -f sha="$(jq -r '.sha' <<< "$FILE")" \
+            -f branch="$BRANCH"
+
+      # Tags created with GITHUB_TOKEN do not trigger workflows, so start them on the tag
+      - name: Trigger release and publish workflows
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          gh workflow run release.yml --ref "$TAG"
+          gh workflow run publish.yml --ref "$TAG"

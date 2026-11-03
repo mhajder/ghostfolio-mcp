@@ -1,0 +1,88 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "ghostfolio-mcp",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "draft-pull-request": true,
+      "pull-request-title-pattern": "chore: release ${version}",
+      "commit-message-pattern": "chore: release ${version}",
+      "changelog-sections": [
+        {
+          "hidden": false,
+          "section": "🚀 Features",
+          "type": "feat"
+        },
+        {
+          "hidden": false,
+          "section": "🐛 Bug Fixes",
+          "type": "fix"
+        },
+        {
+          "hidden": false,
+          "section": "⚡ Performance",
+          "type": "perf"
+        },
+        {
+          "hidden": false,
+          "section": "🧹 Refactoring",
+          "type": "refactor"
+        },
+        {
+          "hidden": false,
+          "section": "📚 Documentation",
+          "type": "docs"
+        },
+        {
+          "hidden": false,
+          "section": "🧩 CI",
+          "type": "ci"
+        },
+        {
+          "hidden": false,
+          "section": "📦 Build",
+          "type": "build"
+        },
+        {
+          "hidden": true,
+          "section": "🧴 Chores",
+          "type": "chore"
+        },
+        {
+          "hidden": false,
+          "section": "🧪 Tests",
+          "type": "test"
+        }
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.packages[0].version"
+        },
+        {
+          "type": "json",
+          "path": "server.json",
+          "jsonpath": "$.packages[1].version"
+        },
+        {
+          "type": "yaml",
+          "path": "CITATION.cff",
+          "jsonpath": "$.version"
+        },
+        {
+          "path": "uv.lock",
+          "type": "toml",
+          "jsonpath": "$.package[?(@.name.value=='ghostfolio-mcp')].version"
+        }
+      ]
+    }
+  }
+}
