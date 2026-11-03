@@ -11,7 +11,6 @@ jobs:
     permissions:
       contents: write
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       tag_name: ${{ steps.get_version.outputs.tag_name }}
 
     steps:
@@ -63,10 +62,14 @@ jobs:
           cat release_notes.md
 
       - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          tag_name: ${{ steps.get_version.outputs.tag_name }}
-          name: ${{ steps.get_version.outputs.tag_name }}
-          body_path: release_notes.md
-          prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.get_version.outputs.tag_name }}
+          PRERELEASE: ${{ contains(steps.get_version.outputs.tag_name, '-') }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file release_notes.md --prerelease="$PRERELEASE"
+          else
+            gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release_notes.md --prerelease="$PRERELEASE"
+          fi
