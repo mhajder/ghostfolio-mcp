@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.8.2](https://github.com/mhajder/ghostfolio-mcp/compare/v1.8.1...v1.8.2) (2026-11-07)
+
+
+### 🐛 Bug Fixes
+
+* **accounts:** tag get_accounts with 'account' like the other account tools ([4f33544](https://github.com/mhajder/ghostfolio-mcp/commit/4f3354472fa7e70ffd60462229565ce1fa951b56))
+
+
+### 🧩 CI
+
+* pin actions to commit SHAs at latest versions ([cbaf98b](https://github.com/mhajder/ghostfolio-mcp/commit/cbaf98b33b8895e308f5d7d4245427b9400d9e63))
+* release with release-please ([9918c9b](https://github.com/mhajder/ghostfolio-mcp/commit/9918c9b10ae0a409eb8ed1f7002cc05e53d8d4d4))
+* replace softprops/action-gh-release with the gh CLI ([bd02fc1](https://github.com/mhajder/ghostfolio-mcp/commit/bd02fc1940240fcb3901b3f9474b75adabec68d0))
+
+
+### 📦 Build
+
+* **deps:** bump ty to 0.0.98 and type check for all platforms ([0aff346](https://github.com/mhajder/ghostfolio-mcp/commit/0aff34697fd99a209528e489df205db5098d108f))
+* **deps:** raise minimum versions of dev tools and vulnerable dependencies ([1f270f6](https://github.com/mhajder/ghostfolio-mcp/commit/1f270f63cdebfaff156c1a7965db7f313867ebc6))
+* **deps:** stop Dependabot proposing Python pre-release and minor bumps ([48202bb](https://github.com/mhajder/ghostfolio-mcp/commit/48202bb66df3ba507fa6f6e952ee7a8a9ed8effc))
+* **docker:** pin base images by version and digest and update them with Dependabot ([688f72d](https://github.com/mhajder/ghostfolio-mcp/commit/688f72d6a819007095b20cc043820fd656fb871d))
+* install optional extras for ty check in pre-commit hook ([47c25ae](https://github.com/mhajder/ghostfolio-mcp/commit/47c25ae31dbb61e886b2f61a1201ad30bb3f7565))
+
+
+### 🧪 Tests
+
+* raise line coverage to 100% ([dd5f49e](https://github.com/mhajder/ghostfolio-mcp/commit/dd5f49ed30c2b8fb845812a59ad547bf0b4864f7))
+
 ## v1.8.1 (2026-10-23)
 
 ### Fix
