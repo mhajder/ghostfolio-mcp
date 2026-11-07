@@ -1,15 +1,19 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: If you use this software, please cite it as below.
 type: software
-title: "Ghostfolio MCP Server"
-abstract: "MCP server for Ghostfolio (open-source wealth management): portfolio performance, holdings, dividends and investments, accounts and balances, activities, benchmarks, watchlist, market data, symbol lookup, exchange rates and transaction import/export. Read-only mode and OIDC/OAuth auth."
+title: Ghostfolio MCP Server
+abstract: >-
+  MCP server for Ghostfolio (open-source wealth management): portfolio
+  performance, holdings, dividends and investments, accounts and balances,
+  activities, benchmarks, watchlist, market data, symbol lookup, exchange rates
+  and transaction import/export. Read-only mode and OIDC/OAuth auth.
 authors:
   - given-names: Mateusz
     family-names: Hajder
-repository-code: "https://github.com/mhajder/ghostfolio-mcp"
-url: "https://pypi.org/project/ghostfolio-mcp/"
+repository-code: https://github.com/mhajder/ghostfolio-mcp
+url: https://pypi.org/project/ghostfolio-mcp/
 license: AGPL-3.0-or-later
-version: 1.8.1
+version: 1.8.2
 keywords:
   - mcp
   - mcp-server
