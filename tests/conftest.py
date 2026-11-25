@@ -11,18 +11,25 @@ BASE_URL = "https://ghostfolio.test:3333"
 AUTH_PATH = "/api/v1/auth/anonymous/"
 
 
+@pytest.fixture(scope="session")
+def _default_config() -> GhostfolioConfig:
+    return GhostfolioConfig(ghostfolio_url=BASE_URL, token="api-token")
+
+
+@pytest.fixture(scope="session")
+def _default_server(_default_config: GhostfolioConfig) -> FastMCP:
+    mcp = FastMCP(name="test")
+    register_tools(mcp, _default_config)
+    return mcp
+
+
 @pytest.fixture
-def recorder():
+def recorder(_default_config: GhostfolioConfig, _default_server: FastMCP):
     """A FastMCP server whose Ghostfolio client records every non-auth request.
 
     `responses` is consumed in call order for whatever the test needs the
     upstream API to return; any request beyond that gets a bare 200 `{}`.
     """
-    config = GhostfolioConfig(ghostfolio_url=BASE_URL, token="api-token")
-
-    mcp = FastMCP(name="test")
-    register_tools(mcp, config)
-
     requests: list[httpx2.Request] = []
     responses: list[httpx2.Response] = []
 
@@ -36,12 +43,12 @@ def recorder():
     # global - so reset both to give each test its own transport.
     GhostfolioClient._instance = None
     client_module._ghostfolio_client_singleton = None
-    client = client_module.get_ghostfolio_client(config)
+    client = client_module.get_ghostfolio_client(_default_config)
     client.client = httpx2.AsyncClient(
         base_url=client.base_url, transport=httpx2.MockTransport(handler)
     )
 
-    yield mcp, requests, responses
+    yield _default_server, requests, responses
 
     GhostfolioClient._instance = None
     client_module._ghostfolio_client_singleton = None

@@ -69,13 +69,20 @@ def load_server(monkeypatch):
     # A developer's .env must not leak into the tests.
     monkeypatch.setattr(dotenv, "load_dotenv", lambda *_args, **_kwargs: False)
 
-    def factory(**env: str):
+    def factory(*, register_tools: bool = True, **env: str):
         env.setdefault("GHOSTFOLIO_URL", "https://ghostfolio.test:3333")
         env.setdefault("GHOSTFOLIO_TOKEN", "api-token")
         for name, value in env.items():
             monkeypatch.setenv(name, value)
         sys.modules.pop(MODULE, None)
-        module = importlib.import_module(MODULE)
+        if register_tools:
+            module = importlib.import_module(MODULE)
+        else:
+            with monkeypatch.context() as m:
+                m.setattr(
+                    "ghostfolio_mcp.tools.register_tools", lambda *_a, **_kw: None
+                )
+                module = importlib.import_module(MODULE)
         monkeypatch.setattr(module.mcp, "run", MagicMock())
         return module
 
@@ -89,7 +96,7 @@ async def tool_names(module) -> set[str]:
 
 @pytest.mark.asyncio
 async def test_health_route_answers_ok(load_server):
-    server = load_server()
+    server = load_server(register_tools=False)
 
     response = await server.health(MagicMock())
 
@@ -167,6 +174,7 @@ async def test_tool_search_replaces_the_tool_list(
 
 def test_rate_limiting_adds_middleware(load_server):
     server = load_server(
+        register_tools=False,
         RATE_LIMIT_ENABLED="true",
         RATE_LIMIT_MAX_REQUESTS="5",
         RATE_LIMIT_WINDOW_MINUTES="2",
@@ -182,7 +190,7 @@ def test_rate_limiting_adds_middleware(load_server):
 
 
 def test_rate_limiting_is_off_by_default(load_server):
-    server = load_server()
+    server = load_server(register_tools=False)
 
     assert not any(
         isinstance(m, SlidingWindowRateLimitingMiddleware)
@@ -191,13 +199,15 @@ def test_rate_limiting_is_off_by_default(load_server):
 
 
 def test_unknown_log_level_falls_back_to_info(load_server, caplog):
-    load_server(LOG_LEVEL="chatty")
+    load_server(register_tools=False, LOG_LEVEL="chatty")
 
     assert "Unknown LOG_LEVEL 'CHATTY'" in caplog.text
 
 
 def test_version_comes_from_the_installed_package(load_server):
-    assert load_server().__version__ == importlib.metadata.version("ghostfolio-mcp")
+    assert load_server(register_tools=False).__version__ == importlib.metadata.version(
+        "ghostfolio-mcp"
+    )
 
 
 def test_version_falls_back_when_package_is_not_installed(load_server, monkeypatch):
@@ -206,26 +216,31 @@ def test_version_falls_back_when_package_is_not_installed(load_server, monkeypat
 
     monkeypatch.setattr(importlib.metadata, "version", missing)
 
-    assert load_server().__version__ == "0.0.1"
+    assert load_server(register_tools=False).__version__ == "0.0.1"
 
 
 def test_invalid_configuration_is_logged_and_raised(load_server, caplog):
     with pytest.raises(ValueError, match="TOOL_SEARCH_STRATEGY"):
-        load_server(TOOL_SEARCH_ENABLED="true", TOOL_SEARCH_STRATEGY="regx")
+        load_server(
+            register_tools=False,
+            TOOL_SEARCH_ENABLED="true",
+            TOOL_SEARCH_STRATEGY="regx",
+        )
 
     assert "Invalid configuration" in caplog.text
 
 
 def test_bearer_token_enables_auth(load_server):
-    assert load_server().mcp.auth is None
+    assert load_server(register_tools=False).mcp.auth is None
     assert isinstance(
-        load_server(MCP_HTTP_BEARER_TOKEN="secret").mcp.auth, StaticTokenVerifier
+        load_server(register_tools=False, MCP_HTTP_BEARER_TOKEN="secret").mcp.auth,
+        StaticTokenVerifier,
     )
 
 
 def test_main_runs_stdio_by_default(load_server, caplog):
     caplog.set_level(logging.INFO)
-    server = load_server()
+    server = load_server(register_tools=False)
 
     server.main()
 
@@ -240,6 +255,7 @@ def test_main_runs_http_transports_on_the_configured_address(
 ):
     caplog.set_level(logging.INFO)
     server = load_server(
+        register_tools=False,
         MCP_TRANSPORT=transport,
         MCP_HTTP_HOST="192.0.2.10",
         MCP_HTTP_PORT="9001",
@@ -258,7 +274,7 @@ def test_main_runs_http_transports_on_the_configured_address(
 
 @pytest.mark.parametrize("transport", ["http", "sse"])
 def test_main_warns_when_http_runs_without_a_token(load_server, caplog, transport):
-    server = load_server(MCP_TRANSPORT=transport)
+    server = load_server(register_tools=False, MCP_TRANSPORT=transport)
 
     server.main()
 
@@ -274,7 +290,7 @@ def test_main_reports_oidc_instead_of_warning(
     load_server, monkeypatch, caplog, transport, label
 ):
     caplog.set_level(logging.INFO)
-    server = load_server(MCP_TRANSPORT=transport)
+    server = load_server(register_tools=False, MCP_TRANSPORT=transport)
     # OIDCProxy runs discovery against the upstream when constructed, so the
     # OIDC settings are swapped in after import; main() only reads the config.
     monkeypatch.setattr(
@@ -296,7 +312,7 @@ def test_main_reports_oidc_instead_of_warning(
 
 
 def test_main_rejects_an_unknown_transport(load_server, caplog):
-    server = load_server(MCP_TRANSPORT="websocket")
+    server = load_server(register_tools=False, MCP_TRANSPORT="websocket")
 
     with pytest.raises(SystemExit) as exc:
         server.main()
@@ -308,7 +324,7 @@ def test_main_rejects_an_unknown_transport(load_server, caplog):
 
 @pytest.mark.parametrize("missing", ["GHOSTFOLIO_URL", "GHOSTFOLIO_TOKEN"])
 def test_main_requires_url_and_token(load_server, caplog, missing):
-    server = load_server(**{missing: ""})
+    server = load_server(register_tools=False, **{missing: ""})
 
     with pytest.raises(SystemExit) as exc:
         server.main()
