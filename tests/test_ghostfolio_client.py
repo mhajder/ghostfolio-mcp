@@ -84,7 +84,14 @@ async def test_entering_builds_an_http_client_from_the_config(config, monkeypatc
     async with client:
         assert client.client is http_client
 
-    assert created == [{"verify": False, "timeout": 12, "base_url": f"{BASE_URL}/api"}]
+    assert created == [
+        {
+            "verify": False,
+            "timeout": 12,
+            "base_url": f"{BASE_URL}/api",
+            "headers": {"User-Agent": client._user_agent()},
+        }
+    ]
     await client.close()
 
 

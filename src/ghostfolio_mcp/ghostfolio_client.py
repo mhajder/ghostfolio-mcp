@@ -3,6 +3,8 @@ import os
 from datetime import UTC
 from datetime import datetime
 from datetime import timedelta
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version
 from typing import Any
 
 import httpx2
@@ -19,6 +21,13 @@ from ghostfolio_mcp.utils import quote_path_segment
 from ghostfolio_mcp.utils import transport_from_env
 
 logger = logging.getLogger(__name__)
+
+try:
+    APP_VERSION = version("ghostfolio-mcp")
+except PackageNotFoundError:
+    APP_VERSION = "0.0.1"
+
+DEFAULT_USER_AGENT = f"ghostfolio-mcp/{APP_VERSION}"
 
 # Response bodies are attacker/server controlled and can be arbitrarily large
 # (e.g. an HTML error page from a misconfigured reverse proxy); truncate what
@@ -72,6 +81,9 @@ class GhostfolioClient:
         self._jwt_token_expiry: datetime | None = None
         self._initialized = True
 
+    def _user_agent(self) -> str:
+        return (self.config.user_agent or "").strip() or DEFAULT_USER_AGENT
+
     async def __aenter__(self):
         """Enter the async context manager."""
         if self.client is None:
@@ -79,6 +91,7 @@ class GhostfolioClient:
                 verify=self.config.verify_ssl,
                 timeout=self.config.timeout,
                 base_url=self.base_url,
+                headers={"User-Agent": self._user_agent()},
             )
         return self
 
@@ -280,6 +293,7 @@ def get_ghostfolio_config_from_env() -> GhostfolioConfig:
         token=env_str("GHOSTFOLIO_TOKEN") or "",
         verify_ssl=env_bool("GHOSTFOLIO_VERIFY_SSL", default=True),
         timeout=_env_setting("GHOSTFOLIO_TIMEOUT", "timeout"),
+        user_agent=env_str("GHOSTFOLIO_USER_AGENT"),
         read_only_mode=env_bool("READ_ONLY_MODE", default=False),
         disabled_tags=disabled_tags,
         rate_limit_enabled=rate_limit_enabled,

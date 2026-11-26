@@ -444,6 +444,7 @@ The server supports SSL certificate verification and custom timeout settings:
 ```env
 GHOSTFOLIO_VERIFY_SSL=true    # Enable SSL certificate verification
 GHOSTFOLIO_TIMEOUT=30         # Connection timeout in seconds
+# GHOSTFOLIO_USER_AGENT=      # Optional User-Agent header (default: ghostfolio-mcp/<version>)
 ```
 
 ### Transport Configuration

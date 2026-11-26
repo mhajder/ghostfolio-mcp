@@ -12,6 +12,10 @@ class GhostfolioConfig(BaseModel):
     token: str = Field(..., description="Ghostfolio API token")
     verify_ssl: bool = Field(True, description="Verify SSL (true/false)")
     timeout: int = Field(30, gt=0, description="Timeout in seconds")
+    user_agent: str | None = Field(
+        None,
+        description="User-Agent header sent upstream (unset = ghostfolio-mcp/<version>)",
+    )
     read_only_mode: bool = Field(False, description="Read-only mode (true/false)")
     disabled_tags: set[str] = Field(
         default_factory=set, description="Set of tags to disable tools for"
