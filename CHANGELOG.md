@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.9.0](https://github.com/mhajder/ghostfolio-mcp/compare/v1.8.2...v1.9.0) (2026-11-27)
+
+
+### 🚀 Features
+
+* **client:** make outbound User-Agent configurable ([eb93fb9](https://github.com/mhajder/ghostfolio-mcp/commit/eb93fb9fe25e659a13577ea2d07103e4f67ef9d9))
+
+
+### 🐛 Bug Fixes
+
+* **deps:** support sentry-sdk 3 ([6d564c7](https://github.com/mhajder/ghostfolio-mcp/commit/6d564c7b24e39a1a4d70059baf5d57da94bed071))
+
+
+### 📦 Build
+
+* **docker:** harden runtime image and precompile bytecode ([511a5fb](https://github.com/mhajder/ghostfolio-mcp/commit/511a5fbf6c9006f10f94be44b7a34b09a3933b98))
+
+
+### 🧪 Tests
+
+* optimize test suite runtime and scope pre-commit stages ([ce73f9e](https://github.com/mhajder/ghostfolio-mcp/commit/ce73f9e57d5b3a5a399fa2f4f5916ebe50ab7a7c))
+
 ## [1.8.2](https://github.com/mhajder/ghostfolio-mcp/compare/v1.8.1...v1.8.2) (2026-11-07)
 
 
